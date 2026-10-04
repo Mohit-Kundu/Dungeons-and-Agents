@@ -16,9 +16,7 @@ def _clear_dnd_env(monkeypatch: pytest.MonkeyPatch) -> None:
             monkeypatch.delenv(key, raising=False)
 
 
-def test_settings_have_documented_defaults(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_settings_have_documented_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _clear_dnd_env(monkeypatch)
 
@@ -28,6 +26,7 @@ def test_settings_have_documented_defaults(
     assert settings.database_url == "sqlite:///./data/dnd_agent.db"
     assert settings.api_host == "127.0.0.1"
     assert settings.api_port == 8000
+    assert settings.api_base_url == "http://127.0.0.1:8000"
     assert settings.memory_recent_turns == 8
     assert settings.summary_every_n_turns == 5
     assert settings.max_tool_calls_per_turn == 12

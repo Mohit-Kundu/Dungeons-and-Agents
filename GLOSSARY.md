@@ -73,3 +73,15 @@ Avoid: chatbot, model (when referring to the agent role).
 The structured current world and character truth: sheet, inventory, location, quest, conditions, and related fields.
 
 Avoid: context (that is prompt material), memory (that is recent turns plus summary).
+
+## Scenario
+
+A predefined starting setup (location, quest, linked character id, intro text) loaded from `content/scenarios/`.
+
+Avoid: adventure module (unless referring to published D&D products), campaign.
+
+## Character
+
+The player’s sheet: abilities, HP, inventory, conditions, and related fields. Distinct from GameState, which also includes location and quest.
+
+Avoid: PC sheet as a separate system name; use Character.

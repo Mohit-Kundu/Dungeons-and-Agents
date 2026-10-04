@@ -8,8 +8,14 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.22.1",
+    "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "pydantic>=2.13.5",
     "pydantic-settings>=2.8.0",
+    "pyyaml>=6.0.3",
     "typer>=0.27.2",
+    "uvicorn>=0.54.0",
 ]
 
 [project.scripts]

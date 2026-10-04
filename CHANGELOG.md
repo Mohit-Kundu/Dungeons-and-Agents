@@ -13,3 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Settings` loaded from `DND_*` environment variables
 - Project logs: `docs/design_choices.md`, `docs/devlog.md`, `GLOSSARY.md`, and this changelog
 - Local-markdown issue tickets under `.scratch/poc-foundation/issues/`
+- Domain models for Character / GameState / SessionCreated Event
+- SQLite EventStore with Snapshot cache and pure Reducer
+- Starter content: Brynn Ironfoot + goblin_cave scenario
+- FastAPI `POST /sessions`, `GET /sessions/{id}/state`, `GET /sessions/{id}/events`
+- CLI commands: `dnd serve`, `dnd new`, `dnd state`, `dnd log`

@@ -1,0 +1,13 @@
+id: goblin_cave
+title: Goblin Cave
+starting_location: Cave Mouth
+character_id: pregen_fighter
+quest:
+  id: clear_cave
+  title: Clear the Cave
+  summary: Drive the goblins out of the cave and recover what they stole from the village.
+  status: active
+intro: |
+  Damp air and torch-smoke spill from a low cave mouth in the hillside.
+  Inside, distant goblin chatter echoes off wet stone. The village wants
+  their stolen goods back — and the cave cleared.

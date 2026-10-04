@@ -136,3 +136,14 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - ADRs only vs growing design log — ADRs are one-file-per-decision; a growing log is simpler for this repo
 - **Decision:** uv, Ruff, Pyright, Pytest, Hypothesis, pytest-asyncio; maintain `CHANGELOG.md`, `GLOSSARY.md`, `docs/devlog.md`, and `docs/design_choices.md`; require log updates in `AGENTS.md`.
 - **Consequences:** Skills read `docs/design_choices.md` for decisions instead of `docs/adr/` for this project.
+
+### D-011: Content files for starter Character and Scenario
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 02 needs a predefined Session bootstrap without character creation.
+- **Options considered:**
+  - Hardcode in Python — fast; mixes data with code
+  - JSON/YAML under `content/` — editable, clear seam for later content packs
+- **Decision:** `content/characters/*.json` and `content/scenarios/*.yaml` loaded by `dnd_agent.content.loader`.
+- **Consequences:** Scenario points at a `character_id`; changing starter kits does not require code edits.

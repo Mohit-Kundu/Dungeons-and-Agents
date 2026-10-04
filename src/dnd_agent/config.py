@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/dnd_agent.db"
     api_host: str = "127.0.0.1"
     api_port: int = 8000
+    api_base_url: str = "http://127.0.0.1:8000"
 
     memory_recent_turns: int = 8
     summary_every_n_turns: int = 5
