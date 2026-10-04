@@ -56,6 +56,24 @@ A named mechanical status with defined rules effects (for example, poisoned, fri
 
 Avoid: status effect, buff/debuff as primary terms.
 
+## Hit Die
+
+The class die used when spending Hit Dice on a short rest (for example, a Fighter’s d10). Stored as `hit_die` on Character with `hit_dice_total` / `hit_dice_remaining` counts.
+
+Avoid: health die, HD pool (prefer “hit dice remaining”).
+
+## Short Rest
+
+A brief rest where the Character may spend Hit Dice to recover HP. Does not clear POC Conditions by itself.
+
+Avoid: camp break (unless narrating fiction).
+
+## Long Rest
+
+An extended rest that restores HP to maximum, recovers Hit Dice (up to half the total, rounded up), and clears tracked Conditions.
+
+Avoid: full heal (too vague; prefer Long Rest).
+
 ## Tool
 
 A typed function the DM Agent may call. Tools run rules, emit Events, and return results. The LLM never writes state directly.

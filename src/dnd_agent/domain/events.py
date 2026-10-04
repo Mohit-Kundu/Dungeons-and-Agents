@@ -45,6 +45,52 @@ class SkillCheckResolved(BaseModel):
     next_rng_seed: int
 
 
+class SavingThrowResolved(BaseModel):
+    type: Literal["saving_throw_resolved"] = "saving_throw_resolved"
+    ability: str
+    dc: int
+    expression: str
+    rolls: list[int]
+    d20: int
+    modifier: int
+    total: int
+    success: bool
+    reason: str = ""
+    next_rng_seed: int
+
+
+class ConditionAdded(BaseModel):
+    type: Literal["condition_added"] = "condition_added"
+    condition: str
+    reason: str = ""
+
+
+class ConditionRemoved(BaseModel):
+    type: Literal["condition_removed"] = "condition_removed"
+    condition: str
+    reason: str = ""
+
+
+class ShortRestCompleted(BaseModel):
+    type: Literal["short_rest_completed"] = "short_rest_completed"
+    hit_dice_spent: int
+    hit_dice_rolls: list[int]
+    hp_recovered: int
+    hp_after: int
+    hit_dice_remaining: int
+    reason: str = ""
+    next_rng_seed: int
+
+
+class LongRestCompleted(BaseModel):
+    type: Literal["long_rest_completed"] = "long_rest_completed"
+    hp_after: int
+    hit_dice_restored: int
+    hit_dice_remaining: int
+    conditions_cleared: list[str]
+    reason: str = ""
+
+
 class LocationChanged(BaseModel):
     type: Literal["location_changed"] = "location_changed"
     location: str
@@ -52,10 +98,26 @@ class LocationChanged(BaseModel):
 
 
 Event = Annotated[
-    SessionCreated | DiceRolled | SkillCheckResolved | LocationChanged,
+    SessionCreated
+    | DiceRolled
+    | SkillCheckResolved
+    | SavingThrowResolved
+    | ConditionAdded
+    | ConditionRemoved
+    | ShortRestCompleted
+    | LongRestCompleted
+    | LocationChanged,
     Field(discriminator="type"),
 ]
 
 EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(
-    SessionCreated | DiceRolled | SkillCheckResolved | LocationChanged
+    SessionCreated
+    | DiceRolled
+    | SkillCheckResolved
+    | SavingThrowResolved
+    | ConditionAdded
+    | ConditionRemoved
+    | ShortRestCompleted
+    | LongRestCompleted
+    | LocationChanged
 )

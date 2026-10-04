@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from dnd_agent.domain.models import AbilityScores, Character
-from dnd_agent.rules.dice import DiceRng, roll
+from dnd_agent.rules.conditions import effects_for
+from dnd_agent.rules.dice import DiceRng, d20_expression, roll
 
 SKILL_ABILITIES: dict[str, str] = {
     "athletics": "strength",
@@ -61,21 +62,30 @@ def skill_check(
     key = skill.strip().lower().replace(" ", "_")
     if key not in SKILL_ABILITIES:
         raise ValueError(f"unknown skill: {skill}")
-    if advantage and disadvantage:
-        advantage = False
-        disadvantage = False
 
     ability = SKILL_ABILITIES[key]
     modifier = ability_modifier(character.abilities, ability)
     if key in {s.lower().replace(" ", "_") for s in character.proficient_skills}:
         modifier += character.proficiency_bonus
 
-    if advantage:
-        expression = "2d20kh1"
-    elif disadvantage:
-        expression = "2d20kl1"
-    else:
-        expression = "1d20"
+    effects = effects_for(character.conditions)
+    if key in effects.auto_fail_skills:
+        return CheckResult(
+            skill=key,
+            ability=ability,
+            dc=dc,
+            expression="auto_fail",
+            rolls=[],
+            d20=0,
+            modifier=modifier,
+            total=0,
+            success=False,
+            reason=reason,
+        )
+
+    if effects.check_disadvantage:
+        disadvantage = True
+    expression = d20_expression(advantage=advantage, disadvantage=disadvantage)
 
     rolled = roll(expression, rng)
     d20 = rolled.total  # expression has no mod; kept die sum

@@ -169,3 +169,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Ship JSON `PlayTurnResponse` now, SSE in ticket 05 — matches ticket split
 - **Decision:** Ticket 03 uses JSON turns; ticket 05 upgrades the same route to SSE event types from D-005.
 - **Consequences:** CLI `play` reads a full JSON body today; streaming clients wait for ticket 05. D-005 remains the target contract.
+
+### D-014: POC Condition set and rest bookkeeping
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 04 needs Conditions, Saves, and rests without a full combat ruleset.
+- **Options considered:**
+  - Full SRD condition list + combat-only effects — complete; mostly inert for exploration
+  - Small POC set with check/save-relevant effects + `hit_die` on Character — playable slice
+  - Data-driven YAML condition packs — flexible; premature for five names
+- **Decision:** Support `poisoned`, `frightened`, `restrained`, `blinded`, `prone` in code; Character stores `hit_die`; short rest spends hit dice (die + CON); long rest restores HP, half hit dice (rounded up), and clears tracked Conditions.
+- **Consequences:** Tools reject unknown Conditions; combat-only prone/blinded attack effects wait for a combat engine; expanding the catalog is a content/rules change, not a sheet schema change.

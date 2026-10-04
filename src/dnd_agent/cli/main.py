@@ -10,7 +10,7 @@ import uvicorn
 
 from dnd_agent.api.app import create_app
 from dnd_agent.cli.client import ApiClient, ApiError
-from dnd_agent.cli.render import console, render_state
+from dnd_agent.cli.render import console, format_turn_event, render_state
 from dnd_agent.config import get_settings
 from dnd_agent.domain.models import GameState
 
@@ -96,21 +96,7 @@ def play_turn(
     console.print(f"[bold]Turn {result['turn_number']}[/bold] ({result['status']})")
     console.print(result["narration"])
     for event in result.get("events", []):
-        event_type = event.get("type")
-        if event_type == "skill_check_resolved":
-            outcome = "success" if event.get("success") else "failure"
-            console.print(
-                f"[yellow]Check[/yellow] {event.get('skill')} "
-                f"d20={event.get('d20')} mod={event.get('modifier')} "
-                f"total={event.get('total')} vs DC {event.get('dc')} → {outcome}"
-            )
-        elif event_type == "dice_rolled":
-            console.print(
-                f"[yellow]Roll[/yellow] {event.get('expression')} = {event.get('total')} "
-                f"({event.get('reason')})"
-            )
-        elif event_type == "location_changed":
-            console.print(f"[yellow]Location[/yellow] → {event.get('location')}")
+        console.print(format_turn_event(event))
     render_state(GameState.model_validate(result["state"]))
 
 

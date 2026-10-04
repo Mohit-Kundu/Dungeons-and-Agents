@@ -4,6 +4,31 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 04: conditions, saves, rests
+
+### Done
+
+- Rules: `saving_throw`, condition catalog/effects, `short_rest` / `long_rest`
+- Character `hit_die`; Events + Reducer mutate HP, hit dice, Conditions
+- DM tools for saves, add/remove Condition, rests; FunctionModel + API tests
+- CLI formats Save/Condition/rest Events; sheet shows hit dice
+- 46 tests green; pyright clean
+
+### Broken / surprises
+
+- Auto-fail (blinded Perception) must not advance RNG seed — treat like a no-roll outcome
+- ASGI tests still need `app.state.store` set when lifespan does not run
+
+### Learned
+
+- Keep condition effects as a pure aggregator applied inside check/save, not duplicated in tools
+
+### Next
+
+- Ticket 05 (SSE streaming) and/or 06 (multi-provider)
+
+---
+
 ## 2026-10-04 — Ticket 03: deterministic skill-check Turn
 
 ### Done

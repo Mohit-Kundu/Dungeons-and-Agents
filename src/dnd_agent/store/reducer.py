@@ -3,13 +3,22 @@
 from __future__ import annotations
 
 from dnd_agent.domain.events import (
+    ConditionAdded,
+    ConditionRemoved,
     DiceRolled,
     Event,
     LocationChanged,
+    LongRestCompleted,
+    SavingThrowResolved,
     SessionCreated,
+    ShortRestCompleted,
     SkillCheckResolved,
 )
-from dnd_agent.domain.models import GameState
+from dnd_agent.domain.models import Character, GameState
+
+
+def _with_character(state: GameState, character: Character, **updates: object) -> GameState:
+    return state.model_copy(update={"character": character, **updates})
 
 
 def apply_event(state: GameState | None, event: Event) -> GameState:
@@ -35,6 +44,42 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
 
     if isinstance(event, SkillCheckResolved):
         return state.model_copy(update={"rng_seed": event.next_rng_seed})
+
+    if isinstance(event, SavingThrowResolved):
+        return state.model_copy(update={"rng_seed": event.next_rng_seed})
+
+    if isinstance(event, ConditionAdded):
+        if event.condition in state.character.conditions:
+            return state
+        conditions = [*state.character.conditions, event.condition]
+        return _with_character(
+            state, state.character.model_copy(update={"conditions": conditions})
+        )
+
+    if isinstance(event, ConditionRemoved):
+        conditions = [c for c in state.character.conditions if c != event.condition]
+        return _with_character(
+            state, state.character.model_copy(update={"conditions": conditions})
+        )
+
+    if isinstance(event, ShortRestCompleted):
+        character = state.character.model_copy(
+            update={
+                "hp": event.hp_after,
+                "hit_dice_remaining": event.hit_dice_remaining,
+            }
+        )
+        return _with_character(state, character, rng_seed=event.next_rng_seed)
+
+    if isinstance(event, LongRestCompleted):
+        character = state.character.model_copy(
+            update={
+                "hp": event.hp_after,
+                "hit_dice_remaining": event.hit_dice_remaining,
+                "conditions": [],
+            }
+        )
+        return _with_character(state, character)
 
     if isinstance(event, LocationChanged):
         return state.model_copy(update={"location": event.location})

@@ -2,10 +2,15 @@
 
 from dnd_agent.domain.events import (
     EVENT_ADAPTER,
+    ConditionAdded,
+    ConditionRemoved,
     DiceRolled,
     Event,
     LocationChanged,
+    LongRestCompleted,
+    SavingThrowResolved,
     SessionCreated,
+    ShortRestCompleted,
     SkillCheckResolved,
 )
 from dnd_agent.domain.models import (
@@ -19,13 +24,18 @@ from dnd_agent.domain.models import (
 __all__ = [
     "AbilityScores",
     "Character",
+    "ConditionAdded",
+    "ConditionRemoved",
     "DiceRolled",
     "EVENT_ADAPTER",
     "Event",
     "GameState",
     "Item",
     "LocationChanged",
+    "LongRestCompleted",
     "Quest",
+    "SavingThrowResolved",
     "SessionCreated",
+    "ShortRestCompleted",
     "SkillCheckResolved",
 ]

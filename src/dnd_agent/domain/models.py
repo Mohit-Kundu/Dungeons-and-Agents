@@ -53,6 +53,7 @@ class Character(BaseModel):
     proficient_skills: list[str] = Field(default_factory=list)
     max_hp: int = Field(ge=1)
     hp: int
+    hit_die: int = Field(ge=4, le=12)
     hit_dice_total: int = Field(ge=1)
     hit_dice_remaining: int = Field(ge=0)
     armor_class: int = Field(ge=1)

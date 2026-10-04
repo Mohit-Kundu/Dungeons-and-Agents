@@ -1,10 +1,10 @@
-"""Seam: skill checks use sheet modifiers + dice + DC."""
+"""Seam: saving throws use ability modifiers + dice + DC."""
 
 from __future__ import annotations
 
 from dnd_agent.domain.models import AbilityScores, Character, Item
-from dnd_agent.rules.checks import skill_check
 from dnd_agent.rules.dice import DiceRng
+from dnd_agent.rules.saves import saving_throw
 
 
 def _fighter() -> Character:
@@ -34,28 +34,30 @@ def _fighter() -> Character:
     )
 
 
-def test_skill_check_includes_ability_and_proficiency() -> None:
-    # STR 16 → +3, proficient athletics → +2, total mod +5
-    result = skill_check(
+def test_saving_throw_uses_ability_modifier() -> None:
+    # CON 14 → +2
+    result = saving_throw(
         _fighter(),
-        skill="athletics",
-        dc=10,
+        ability="constitution",
+        dc=13,
         rng=DiceRng(seed=0),
     )
-    assert result.modifier == 5
-    assert result.total == result.d20 + 5
-    assert result.success == (result.total >= 10)
-    assert result.skill == "athletics"
-    assert result.ability == "strength"
+    assert result.ability == "constitution"
+    assert result.modifier == 2
+    assert result.total == result.d20 + 2
+    assert result.success == (result.total >= 13)
+    assert result.expression == "1d20"
 
 
-def test_skill_check_advantage_uses_kh_expression() -> None:
-    result = skill_check(
-        _fighter(),
-        skill="perception",
-        dc=15,
-        rng=DiceRng(seed=2),
-        advantage=True,
-    )
-    assert result.expression == "2d20kh1"
-    assert len(result.rolls) == 2
+def test_saving_throw_rejects_unknown_ability() -> None:
+    try:
+        saving_throw(
+            _fighter(),
+            ability="luck",
+            dc=10,
+            rng=DiceRng(seed=1),
+        )
+    except ValueError as exc:
+        assert "unknown ability" in str(exc).lower()
+    else:
+        raise AssertionError("expected ValueError")

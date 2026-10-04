@@ -56,6 +56,17 @@ class DiceRng:
         return self._rng.randint(0, 2**31 - 1)
 
 
+def d20_expression(*, advantage: bool = False, disadvantage: bool = False) -> str:
+    """Resolve advantage/disadvantage into a d20 dice expression (they cancel)."""
+    if advantage and disadvantage:
+        return "1d20"
+    if advantage:
+        return "2d20kh1"
+    if disadvantage:
+        return "2d20kl1"
+    return "1d20"
+
+
 def parse_dice(expression: str) -> DiceExpression:
     cleaned = expression.strip().lower().replace(" ", "")
     match = _DICE_RE.fullmatch(cleaned)

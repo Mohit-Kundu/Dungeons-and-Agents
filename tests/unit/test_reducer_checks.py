@@ -28,6 +28,7 @@ def _created() -> SessionCreated:
             proficient_skills=["perception"],
             max_hp=12,
             hp=12,
+            hit_die=10,
             hit_dice_total=1,
             hit_dice_remaining=1,
             armor_class=16,

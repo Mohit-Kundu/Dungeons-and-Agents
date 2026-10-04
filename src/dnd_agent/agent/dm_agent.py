@@ -7,7 +7,17 @@ from pydantic_ai.models import Model
 
 from dnd_agent.agent.deps import TurnDeps
 from dnd_agent.agent.prompts import DM_SYSTEM_PROMPT
-from dnd_agent.agent.tools import get_state, move_to, roll_dice, skill_check_tool
+from dnd_agent.agent.tools import (
+    add_condition,
+    get_state,
+    long_rest_tool,
+    move_to,
+    remove_condition,
+    roll_dice,
+    saving_throw_tool,
+    short_rest_tool,
+    skill_check_tool,
+)
 
 
 def build_dm_agent(model: Model | str) -> Agent[TurnDeps, str]:
@@ -20,5 +30,10 @@ def build_dm_agent(model: Model | str) -> Agent[TurnDeps, str]:
     agent.tool(get_state)
     agent.tool(roll_dice)
     agent.tool(name="skill_check")(skill_check_tool)
+    agent.tool(name="saving_throw")(saving_throw_tool)
+    agent.tool(add_condition)
+    agent.tool(remove_condition)
+    agent.tool(name="short_rest")(short_rest_tool)
+    agent.tool(name="long_rest")(long_rest_tool)
     agent.tool(move_to)
     return agent

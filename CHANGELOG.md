@@ -22,3 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Events: `DiceRolled`, `SkillCheckResolved`, `LocationChanged`
 - PydanticAI DM Agent tools: `get_state`, `roll_dice`, `skill_check`, `move_to`
 - TurnService + `POST /sessions/{id}/turns` + CLI `dnd play`
+- Saving throws, POC Conditions (`poisoned`/`frightened`/`restrained`/`blinded`/`prone`), short/long rests
+- Character `hit_die`; Events for saves, condition add/remove, and rests
+- DM tools: `saving_throw`, `add_condition`, `remove_condition`, `short_rest`, `long_rest`
+- CLI displays Save / Condition / rest Events and hit dice on the sheet
