@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import aiosqlite
+
 from dnd_agent.content.loader import load_character, load_scenario
 from dnd_agent.domain.events import EVENT_ADAPTER, Event, SessionCreated
 from dnd_agent.domain.models import GameState

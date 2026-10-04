@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
+
 from dnd_agent.domain.events import EVENT_ADAPTER, Event
 from dnd_agent.domain.models import GameState
 
