@@ -1,0 +1,57 @@
+[project]
+name = "dnd-agent"
+version = "0.1.0"
+description = "LLM-powered Dungeon Master with deterministic rules and event-sourced state"
+readme = "README.md"
+authors = [
+    { name = "Mohit Kundu", email = "57038776+Mohit-Kundu@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic-settings>=2.8.0",
+    "typer>=0.27.2",
+]
+
+[project.scripts]
+dnd = "dnd_agent.cli.main:app"
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.130.0",
+    "pyright>=1.1.400",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.26.0",
+    "ruff>=0.11.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "live: hits a real LLM provider; opt-in only",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
