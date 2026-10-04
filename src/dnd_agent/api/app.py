@@ -11,6 +11,7 @@ from pydantic_ai.models import Model
 from dnd_agent.api.routes.sessions import router as sessions_router
 from dnd_agent.api.routes.turns import router as turns_router
 from dnd_agent.config import Settings, get_settings
+from dnd_agent.services.session_locks import SessionLockRegistry
 from dnd_agent.store.event_store import EventStore
 
 
@@ -40,6 +41,7 @@ def create_app(
 
     app = FastAPI(title="D&D Agent", version="0.1.0", lifespan=lifespan)
     app.state.turn_model = turn_model
+    app.state.session_locks = SessionLockRegistry()
     app.include_router(sessions_router)
     app.include_router(turns_router)
     return app

@@ -13,8 +13,28 @@ from dnd_agent.domain.models import GameState
 console = Console()
 
 
+def format_stream_event(event: dict[str, Any]) -> str | None:
+    """Format one SSE Turn stream payload. Returns None for narration (printed raw)."""
+    event_type = event.get("type")
+    if event_type == "narration_delta":
+        return None
+    if event_type == "tool_call":
+        return f"[cyan]Tool[/cyan] {event.get('tool_name')} {event.get('args')}"
+    if event_type == "roll":
+        inner = event.get("event") or {}
+        return format_turn_event(inner if isinstance(inner, dict) else {})
+    if event_type == "state_changed":
+        inner = event.get("event") or {}
+        return format_turn_event(inner if isinstance(inner, dict) else {})
+    if event_type == "error":
+        return f"[red]Error[/red] {event.get('message')}"
+    if event_type == "done":
+        return f"[bold]Turn {event.get('turn_number')}[/bold] ({event.get('status')})"
+    return f"[yellow]Stream[/yellow] {event_type}"
+
+
 def format_turn_event(event: dict[str, Any]) -> str:
-    """Format one Turn Event dict for CLI display."""
+    """Format one domain Event dict for CLI display."""
     event_type = event.get("type")
     if event_type == "skill_check_resolved":
         outcome = "success" if event.get("success") else "failure"

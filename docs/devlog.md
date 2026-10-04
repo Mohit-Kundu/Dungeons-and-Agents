@@ -4,6 +4,30 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 05: streaming narration
+
+### Done
+
+- `TurnService.stream_turn` maps PydanticAI stream events → D-005 SSE payloads
+- FastAPI `POST /turns` returns `text/event-stream`; app-scoped session locks
+- CLI SSE parser + `dnd play` live narration / tool / roll rendering
+- Abort keeps committed rolls; concurrency serializes; 52 tests green
+
+### Broken / surprises
+
+- FunctionModel needs `stream_function` for `run_stream_events` (plain `function` is not enough)
+- Per-request `TurnService` needs a shared `SessionLockRegistry` (shared dict alone raced on lock creation)
+
+### Learned
+
+- Emit `roll` / `state_changed` from domain Events after `FunctionToolResultEvent`, not from tool args alone
+
+### Next
+
+- Ticket 06 (multi-provider) and/or 07 (playable POC milestone)
+
+---
+
 ## 2026-10-04 — Ticket 04: conditions, saves, rests
 
 ### Done

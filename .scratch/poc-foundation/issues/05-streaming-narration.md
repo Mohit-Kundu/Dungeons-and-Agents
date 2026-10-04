@@ -4,10 +4,15 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The API emits SSE events for narration chunks, tool calls, dice rolls, state changes, errors, and completion
-- [ ] The CLI renders streamed narration and mechanical events clearly
-- [ ] A per-session lock prevents concurrent turns from corrupting state
-- [ ] Aborted turns are recorded without losing or rerolling previous events
-- [ ] SSE behavior and concurrency are tested
+## Comments
+
+- Seams: TurnService stream + session lock, POST /turns SSE, CLI SSE client + play, concurrency/abort tests.
+- SSE types (D-005): narration_delta, tool_call, roll, state_changed, error, done.
+
+- [x] The API emits SSE events for narration chunks, tool calls, dice rolls, state changes, errors, and completion
+- [x] The CLI renders streamed narration and mechanical events clearly
+- [x] A per-session lock prevents concurrent turns from corrupting state
+- [x] Aborted turns are recorded without losing or rerolling previous events
+- [x] SSE behavior and concurrency are tested

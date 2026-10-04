@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 import httpx
 
+from dnd_agent.cli.sse import iter_sse_data
 from dnd_agent.domain.events import EVENT_ADAPTER, Event
 from dnd_agent.domain.models import GameState
 
@@ -64,14 +66,16 @@ class ApiClient:
         raw_events = response.json()["events"]
         return [EVENT_ADAPTER.validate_python(item) for item in raw_events]
 
-    def play_turn(self, session_id: str, player_text: str) -> dict[str, Any]:
-        response = self._client.post(
+    def play_turn(self, session_id: str, player_text: str) -> Iterator[dict[str, Any]]:
+        """Stream SSE payloads from POST /turns."""
+        with self._client.stream(
+            "POST",
             f"/sessions/{session_id}/turns",
             json={"player_text": player_text},
             timeout=120.0,
-        )
-        self._raise_for_status(response)
-        return response.json()
+        ) as response:
+            self._raise_for_status(response)
+            yield from iter_sse_data(response.iter_lines())
 
     @staticmethod
     def _raise_for_status(response: httpx.Response) -> None:

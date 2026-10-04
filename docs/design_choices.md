@@ -162,7 +162,7 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
 ### D-013: JSON Turn responses until SSE ticket
 
 - **Date:** 2026-10-04
-- **Status:** accepted
+- **Status:** superseded by D-015
 - **Context:** D-005 chose SSE for turns, but ticket 03 only requires a playable Turn; ticket 05 owns streaming.
 - **Options considered:**
   - Implement SSE in ticket 03 — meets D-005 early; larger blast radius
@@ -181,3 +181,14 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Data-driven YAML condition packs — flexible; premature for five names
 - **Decision:** Support `poisoned`, `frightened`, `restrained`, `blinded`, `prone` in code; Character stores `hit_die`; short rest spends hit dice (die + CON); long rest restores HP, half hit dice (rounded up), and clears tracked Conditions.
 - **Consequences:** Tools reject unknown Conditions; combat-only prone/blinded attack effects wait for a combat engine; expanding the catalog is a content/rules change, not a sheet schema change.
+
+### D-015: Upgrade Turns to SSE streaming
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 05 delivers D-005; D-013’s temporary JSON Turn body must go away.
+- **Options considered:**
+  - Keep JSON + optional `?stream=1` — compatible; two clients to maintain
+  - Replace `POST /turns` with SSE only — one contract; breaks interim JSON clients
+- **Decision:** `POST /sessions/{id}/turns` returns `text/event-stream` with `narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`. A shared `SessionLockRegistry` on app state serializes concurrent Turns per Session.
+- **Consequences:** CLI consumes SSE; FunctionModel tests need `stream_function` for stream paths; `run_turn` remains for non-stream unit/agent tests.

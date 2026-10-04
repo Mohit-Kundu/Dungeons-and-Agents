@@ -26,3 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Character `hit_die`; Events for saves, condition add/remove, and rests
 - DM tools: `saving_throw`, `add_condition`, `remove_condition`, `short_rest`, `long_rest`
 - CLI displays Save / Condition / rest Events and hit dice on the sheet
+- `POST /sessions/{id}/turns` streams SSE (`narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`)
+- Per-session Turn lock; aborted Turns keep committed Events
+- CLI `dnd play` consumes SSE and prints live narration + mechanical events
