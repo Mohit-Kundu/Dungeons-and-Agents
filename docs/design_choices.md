@@ -147,3 +147,25 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - JSON/YAML under `content/` — editable, clear seam for later content packs
 - **Decision:** `content/characters/*.json` and `content/scenarios/*.yaml` loaded by `dnd_agent.content.loader`.
 - **Consequences:** Scenario points at a `character_id`; changing starter kits does not require code edits.
+
+### D-012: Advance RNG seed on each dice Event
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Seeded dice must be deterministic across process restarts without replaying every prior `randint` call shape.
+- **Options considered:**
+  - Store call count and replay N draws — fragile if draw sizes differ
+  - Persist `next_rng_seed` on each roll/Check Event — simple, replay-safe
+- **Decision:** Each `DiceRolled` / `SkillCheckResolved` carries `next_rng_seed`; Reducer writes it to GameState.
+- **Consequences:** Replay uses recorded totals; live play always constructs `DiceRng(state.rng_seed)`.
+
+### D-013: JSON Turn responses until SSE ticket
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** D-005 chose SSE for turns, but ticket 03 only requires a playable Turn; ticket 05 owns streaming.
+- **Options considered:**
+  - Implement SSE in ticket 03 — meets D-005 early; larger blast radius
+  - Ship JSON `PlayTurnResponse` now, SSE in ticket 05 — matches ticket split
+- **Decision:** Ticket 03 uses JSON turns; ticket 05 upgrades the same route to SSE event types from D-005.
+- **Consequences:** CLI `play` reads a full JSON body today; streaming clients wait for ticket 05. D-005 remains the target contract.

@@ -9,14 +9,10 @@ from pathlib import Path
 from typing import Any
 
 import aiosqlite
-from pydantic import TypeAdapter
-
 from dnd_agent.content.loader import load_character, load_scenario
-from dnd_agent.domain.events import Event, SessionCreated
+from dnd_agent.domain.events import EVENT_ADAPTER, Event, SessionCreated
 from dnd_agent.domain.models import GameState
 from dnd_agent.store.reducer import apply_event, fold_events
-
-_EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(SessionCreated)
 
 
 class EventStore:
@@ -48,6 +44,17 @@ class EventStore:
                     session_id TEXT PRIMARY KEY,
                     state_json TEXT NOT NULL,
                     FOREIGN KEY (session_id) REFERENCES sessions(id)
+                );
+                CREATE TABLE IF NOT EXISTS turns (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    turn_number INTEGER NOT NULL,
+                    player_text TEXT NOT NULL,
+                    narration TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (session_id) REFERENCES sessions(id),
+                    UNIQUE(session_id, turn_number)
                 );
                 """
             )
@@ -162,7 +169,7 @@ class EventStore:
         events: list[Event] = []
         for (payload,) in rows:
             data: dict[str, Any] = json.loads(payload)
-            events.append(_EVENT_ADAPTER.validate_python(data))
+            events.append(EVENT_ADAPTER.validate_python(data))
         return events
 
     async def rebuild_snapshot(self, session_id: str) -> GameState:
@@ -180,3 +187,62 @@ class EventStore:
             )
             await db.commit()
         return state
+
+    async def add_turn(
+        self,
+        session_id: str,
+        *,
+        player_text: str,
+        narration: str,
+        status: str = "ok",
+    ) -> int:
+        await self._ensure_open()
+        if await self.get_snapshot(session_id) is None:
+            raise KeyError(f"session not found: {session_id}")
+        now = datetime.now(UTC).isoformat()
+        async with aiosqlite.connect(self._db_path) as db:
+            cursor = await db.execute(
+                """
+                SELECT COALESCE(MAX(turn_number), 0) + 1
+                FROM turns WHERE session_id = ?
+                """,
+                (session_id,),
+            )
+            row = await cursor.fetchone()
+            turn_number = int(row[0]) if row else 1
+            await db.execute(
+                """
+                INSERT INTO turns (
+                    session_id, turn_number, player_text, narration, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (session_id, turn_number, player_text, narration, status, now),
+            )
+            await db.commit()
+        return turn_number
+
+    async def list_recent_turns(self, session_id: str, *, limit: int) -> list[dict[str, Any]]:
+        await self._ensure_open()
+        async with aiosqlite.connect(self._db_path) as db:
+            cursor = await db.execute(
+                """
+                SELECT turn_number, player_text, narration, status
+                FROM turns
+                WHERE session_id = ?
+                ORDER BY turn_number DESC
+                LIMIT ?
+                """,
+                (session_id, limit),
+            )
+            rows = await cursor.fetchall()
+        turns = [
+            {
+                "turn_number": turn_number,
+                "player_text": player_text,
+                "narration": narration,
+                "status": status,
+            }
+            for turn_number, player_text, narration, status in rows
+        ]
+        turns.reverse()
+        return turns

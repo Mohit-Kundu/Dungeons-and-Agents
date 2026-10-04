@@ -4,12 +4,16 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The DM agent receives current state and recent conversation context
-- [ ] The agent can call typed state and rules tools
-- [ ] Skill checks use deterministic code for modifiers, DCs, and dice
-- [ ] Dice rolls and state changes are persisted as events
-- [ ] The agent cannot invent a roll or directly mutate state
-- [ ] A fake/test model verifies tool-call behavior without network access
-- [ ] The API and CLI expose a complete playable turn
+## Comments
+
+- Seams: dice, skill_check, Event/reducer, PydanticAI tools+FunctionModel, POST /turns + CLI play.
+
+- [x] The DM agent receives current state and recent conversation context
+- [x] The agent can call typed state and rules tools
+- [x] Skill checks use deterministic code for modifiers, DCs, and dice
+- [x] Dice rolls and state changes are persisted as events
+- [x] The agent cannot invent a roll or directly mutate state
+- [x] A fake/test model verifies tool-call behavior without network access
+- [x] The API and CLI expose a complete playable turn

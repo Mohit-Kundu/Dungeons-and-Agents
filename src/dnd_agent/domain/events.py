@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, TypeAdapter
 
 from dnd_agent.domain.models import Character, Quest
 
@@ -19,5 +19,43 @@ class SessionCreated(BaseModel):
     rng_seed: int
 
 
-# Expand this union as new Event types land.
-Event = SessionCreated
+class DiceRolled(BaseModel):
+    type: Literal["dice_rolled"] = "dice_rolled"
+    expression: str
+    rolls: list[int]
+    kept: list[int]
+    modifier: int
+    total: int
+    reason: str = ""
+    next_rng_seed: int
+
+
+class SkillCheckResolved(BaseModel):
+    type: Literal["skill_check_resolved"] = "skill_check_resolved"
+    skill: str
+    ability: str
+    dc: int
+    expression: str
+    rolls: list[int]
+    d20: int
+    modifier: int
+    total: int
+    success: bool
+    reason: str = ""
+    next_rng_seed: int
+
+
+class LocationChanged(BaseModel):
+    type: Literal["location_changed"] = "location_changed"
+    location: str
+    reason: str = ""
+
+
+Event = Annotated[
+    SessionCreated | DiceRolled | SkillCheckResolved | LocationChanged,
+    Field(discriminator="type"),
+]
+
+EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(
+    SessionCreated | DiceRolled | SkillCheckResolved | LocationChanged
+)

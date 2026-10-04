@@ -5,12 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
-from pydantic import TypeAdapter
-
-from dnd_agent.domain.events import Event, SessionCreated
+from dnd_agent.domain.events import EVENT_ADAPTER, Event
 from dnd_agent.domain.models import GameState
-
-_EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(SessionCreated)
 
 
 class ApiError(RuntimeError):
@@ -25,7 +21,7 @@ class ApiClient:
         self,
         base_url: str = "http://127.0.0.1:8000",
         *,
-        client: httpx.Client | None = None,
+        client: httpx.Client | Any | None = None,
     ) -> None:
         self._owns_client = client is None
         self._client = client or httpx.Client(base_url=base_url.rstrip("/"), timeout=30.0)
@@ -65,7 +61,16 @@ class ApiClient:
         response = self._client.get(f"/sessions/{session_id}/events")
         self._raise_for_status(response)
         raw_events = response.json()["events"]
-        return [_EVENT_ADAPTER.validate_python(item) for item in raw_events]
+        return [EVENT_ADAPTER.validate_python(item) for item in raw_events]
+
+    def play_turn(self, session_id: str, player_text: str) -> dict[str, Any]:
+        response = self._client.post(
+            f"/sessions/{session_id}/turns",
+            json={"player_text": player_text},
+            timeout=120.0,
+        )
+        self._raise_for_status(response)
+        return response.json()
 
     @staticmethod
     def _raise_for_status(response: httpx.Response) -> None:

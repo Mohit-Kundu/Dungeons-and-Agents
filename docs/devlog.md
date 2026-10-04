@@ -4,6 +4,31 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 03: deterministic skill-check Turn
+
+### Done
+
+- Rules: dice expressions + `skill_check` with proficiency/ability mods
+- Events for rolls/Checks/location; Reducer advances `rng_seed`
+- PydanticAI DM Agent with typed tools; TurnService persists turns
+- API `POST /sessions/{id}/turns`; CLI `dnd play`
+- FunctionModel tests (no network); 22 tests green
+
+### Broken / surprises
+
+- `agent.tool(fn, name=...)` typing wants `agent.tool(name=...)(fn)`
+- Broad `except` on Turn abort so partial Events stay committed (D-009)
+
+### Learned
+
+- Seed advance via `next_rng_seed` on Events beats replaying call counts
+
+### Next
+
+- Ticket 04 (conditions/saves/rests) and/or 05 (SSE streaming)
+
+---
+
 ## 2026-10-04 — Ticket 02: persistent Session
 
 ### Done

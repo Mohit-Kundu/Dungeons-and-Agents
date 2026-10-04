@@ -18,3 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Starter content: Brynn Ironfoot + goblin_cave scenario
 - FastAPI `POST /sessions`, `GET /sessions/{id}/state`, `GET /sessions/{id}/events`
 - CLI commands: `dnd serve`, `dnd new`, `dnd state`, `dnd log`
+- Dice parser + seeded RNG; skill Checks with modifiers/DC/advantage
+- Events: `DiceRolled`, `SkillCheckResolved`, `LocationChanged`
+- PydanticAI DM Agent tools: `get_state`, `roll_dice`, `skill_check`, `move_to`
+- TurnService + `POST /sessions/{id}/turns` + CLI `dnd play`

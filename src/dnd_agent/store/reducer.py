@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from dnd_agent.domain.events import Event, SessionCreated
+from dnd_agent.domain.events import (
+    DiceRolled,
+    Event,
+    LocationChanged,
+    SessionCreated,
+    SkillCheckResolved,
+)
 from dnd_agent.domain.models import GameState
 
 
@@ -20,6 +26,18 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
             rng_seed=event.rng_seed,
             summary="",
         )
+
+    if state is None:
+        raise ValueError(f"{type(event).__name__} requires an existing GameState")
+
+    if isinstance(event, DiceRolled):
+        return state.model_copy(update={"rng_seed": event.next_rng_seed})
+
+    if isinstance(event, SkillCheckResolved):
+        return state.model_copy(update={"rng_seed": event.next_rng_seed})
+
+    if isinstance(event, LocationChanged):
+        return state.model_copy(update={"location": event.location})
 
     raise TypeError(f"unsupported event type: {type(event)!r}")
 
