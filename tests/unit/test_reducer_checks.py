@@ -73,3 +73,27 @@ def test_location_changed_updates_location() -> None:
         LocationChanged(location="Goblin Den", reason="crept inside"),
     )
     assert next_state.location == "Goblin Den"
+
+
+def test_location_changed_records_visited_location_id() -> None:
+    from dnd_agent.content.loader import load_scenario
+
+    scenario = load_scenario("goblin_cave")
+    created = _created()
+    created = created.model_copy(
+        update={
+            "location": "cave_mouth",
+            "world": scenario.build_world(current_location_id="cave_mouth"),
+        }
+    )
+    state = apply_event(None, created)
+    next_state = apply_event(
+        state,
+        LocationChanged(location="twisting_tunnel", reason="follow tracks"),
+    )
+    assert next_state.location == "twisting_tunnel"
+    assert next_state.world.visited_location_ids == ["cave_mouth", "twisting_tunnel"]
+    assert (
+        fold_events([created, LocationChanged(location="twisting_tunnel", reason="follow tracks")])
+        == next_state
+    )

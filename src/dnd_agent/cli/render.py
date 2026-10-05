@@ -11,8 +11,10 @@ from rich.table import Table
 
 from dnd_agent.api.schemas import LatestTurn, SessionOverviewResponse
 from dnd_agent.domain.models import GameState
+from dnd_agent.world.travel import ReachableDestination, reachable_destinations
 
 console = Console()
+
 
 def progress_status_text(label: str, tick: int) -> str:
     """Cycle trailing ellipsis so waits feel alive."""
@@ -37,6 +39,22 @@ def format_stream_event(event: dict[str, Any]) -> str | None:
     if event_type == "done":
         return f"[bold]Turn {event.get('turn_number')}[/bold] ({event.get('status')})"
     return f"[yellow]Stream[/yellow] {event_type}"
+
+
+def format_reachable_destinations(
+    destinations: list[ReachableDestination] | list[dict[str, Any]],
+) -> str:
+    if not destinations:
+        return "(none)"
+    lines: list[str] = []
+    for destination in destinations:
+        if isinstance(destination, ReachableDestination):
+            lines.append(f"{destination.name} [{destination.id}]")
+        else:
+            name = str(destination.get("name") or destination.get("id") or "?")
+            dest_id = str(destination.get("id") or "?")
+            lines.append(f"{name} [{dest_id}]")
+    return ", ".join(lines)
 
 
 def format_turn_event(event: dict[str, Any]) -> str:
@@ -159,6 +177,10 @@ def render_state(state: GameState) -> None:
     sheet.add_row("Session", state.session_id)
     sheet.add_row("Scenario", state.scenario_id)
     sheet.add_row("Location", state.location)
+    sheet.add_row(
+        "Reachable",
+        format_reachable_destinations(reachable_destinations(state)),
+    )
     sheet.add_row("Quest", f"{state.quest.title} [{state.quest.status}]")
     sheet.add_row(
         "Character",

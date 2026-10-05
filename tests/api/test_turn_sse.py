@@ -42,9 +42,7 @@ def _streaming_model() -> FunctionModel:
         if calls["n"] == 1:
             yield {0: DeltaToolCall(name="skill_check")}
             yield {
-                0: DeltaToolCall(
-                    json_args='{"skill":"investigation","dc":11,"reason":"search"}'
-                )
+                0: DeltaToolCall(json_args='{"skill":"investigation","dc":11,"reason":"search"}')
             }
         else:
             text = "You notice scratches on the stone."
@@ -83,15 +81,14 @@ async def test_play_turn_streams_sse_contract(client: AsyncClient) -> None:
     assert types[0] == "progress"
     assert events[0]["phase"] == "awaiting_dm"
     assert "progress" in types
-    assert any(
-        event["type"] == "progress" and event.get("phase") == "rolling" for event in events
-    )
+    assert any(event["type"] == "progress" and event.get("phase") == "rolling" for event in events)
     assert "tool_call" in types
     assert "roll" in types
     assert "narration_delta" in types
     assert types[-1] == "done"
     done = events[-1]
     assert done["status"] == "ok"
+    assert [dest["id"] for dest in done["reachable"]] == ["twisting_tunnel"]
     assert "scratches" in "".join(
         event["text"] for event in events if event["type"] == "narration_delta"
     )

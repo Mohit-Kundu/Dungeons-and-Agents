@@ -4,6 +4,31 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 02 (authoritative-adventure-state): constrain travel
+
+### Done
+
+- `validate_travel` / `reachable_destinations` enforce Scenario exits; `move_to` rejects unknown, current, or unreachable targets
+- Reducer records visited Location ids on successful travel
+- TurnResult and SSE `done` expose reachable destinations; DM prompt and CLI show the same list
+- Explicit illegal travel short-circuits as `no_progress` without invoking the DM (D-023)
+- 112 tests green
+
+### Broken / surprises
+
+- Travel detection needs a travel verb plus a unique Location name/id so scouting text at the current Location does not false-reject
+
+### Learned
+
+- Keep destination guidance on the Turn completion payload so CLI and API stay aligned without parsing narration
+
+### Next
+
+- Ticket 03: reject unavailable action targets before DM resolution
+- Ticket 07: refresh Recaps only on restore or command
+
+---
+
 ## 2026-10-04 — Ticket 01 (authoritative-adventure-state): load playable world
 
 ### Done

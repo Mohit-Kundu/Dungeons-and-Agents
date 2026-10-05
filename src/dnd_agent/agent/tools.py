@@ -22,6 +22,7 @@ from dnd_agent.rules.conditions import normalize_condition
 from dnd_agent.rules.dice import DiceRng, roll
 from dnd_agent.rules.rests import long_rest, short_rest
 from dnd_agent.rules.saves import saving_throw
+from dnd_agent.world.travel import validate_travel
 
 
 async def get_state(ctx: RunContext[TurnDeps]) -> dict[str, Any]:
@@ -256,11 +257,16 @@ async def move_to(
     location: str,
     reason: str = "",
 ) -> dict[str, Any]:
-    """Move the party to a new location after the fiction supports it."""
-    location = location.strip()
-    if not location:
-        return {"error": "location must not be empty"}
-    event = LocationChanged(location=location, reason=reason)
+    """Move the party along an authoritative exit after the fiction supports it."""
+    state = await ctx.deps.store.get_snapshot(ctx.deps.session_id)
+    if state is None:
+        return {"error": f"session not found: {ctx.deps.session_id}"}
+    try:
+        destination_id = validate_travel(state, location)
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+    event = LocationChanged(location=destination_id, reason=reason)
     try:
         await ctx.deps.store.append_event(ctx.deps.session_id, event)
     except KeyError as exc:

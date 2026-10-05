@@ -7,6 +7,7 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, Field
 
 from dnd_agent.domain.models import GameState
+from dnd_agent.world.travel import ReachableDestination
 
 ROLL_EVENT_TYPES = frozenset(
     {
@@ -68,6 +69,7 @@ class DoneEvent(BaseModel):
     status: str
     state: GameState
     narration: str = ""
+    reachable: list[ReachableDestination] = Field(default_factory=list)
 
 
 TurnStreamEvent = Annotated[

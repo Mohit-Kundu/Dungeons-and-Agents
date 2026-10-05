@@ -98,6 +98,12 @@ The authoritative Playable Facts carried on GameState: Locations with exits and 
 
 Avoid: briefing (prose seed), map (prefer Locations/exits).
 
+## Reachable Destination
+
+A Location currently available through an exit from the party’s Location. Derived from PlayableWorld, never from DM narration.
+
+Avoid: available room (prefer Reachable Destination), adjacent tile.
+
 ## Scenario
 
 A predefined starting setup loaded from `content/scenarios/`: starting Location, Quest, linked character id, intro/beats, and authoritative Playable Facts (Locations with exits, surroundings, Enemy Groups, Objectives).

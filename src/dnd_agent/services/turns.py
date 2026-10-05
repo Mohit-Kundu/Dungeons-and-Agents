@@ -40,6 +40,14 @@ from dnd_agent.services.stream_events import (
     TurnStreamEvent,
 )
 from dnd_agent.store.event_store import EventStore
+from dnd_agent.world.travel import (
+    ReachableDestination,
+    detect_travel_destination,
+    format_reachable_lines,
+    reachable_destinations,
+    rejected_travel_narration,
+    validate_travel,
+)
 
 ROLLING_TOOLS = frozenset({"skill_check", "saving_throw", "roll_dice", "short_rest"})
 
@@ -64,6 +72,7 @@ class TurnResult:
     state: GameState
     events: list[Event]
     status: str
+    reachable: list[ReachableDestination]
 
 
 def _format_context(state: GameState, recent_turns: list[dict]) -> str:
@@ -72,10 +81,25 @@ def _format_context(state: GameState, recent_turns: list[dict]) -> str:
         history_lines.append(f"Player: {turn['player_text']}")
         history_lines.append(f"DM: {turn['narration']}")
     history = "\n".join(history_lines) if history_lines else "(no prior turns)"
+    destinations = format_reachable_lines(reachable_destinations(state))
     return (
         f"Current GameState JSON:\n{state.model_dump_json(indent=2)}\n\n"
+        f"Reachable destinations:\n{destinations}\n\n"
         f"Recent turns:\n{history}\n\n"
         f"Rolling summary:\n{state.summary or '(empty)'}"
+    )
+
+
+def _format_turn_prompt(
+    state: GameState,
+    recent_turns: list[dict],
+    player_text: str,
+) -> str:
+    return (
+        f"{_format_context(state, recent_turns)}\n\n"
+        f"Player action:\n{player_text}\n\n"
+        "Resolve the action. Call tools for any Check or roll before narrating the outcome. "
+        "Use move_to only with a reachable destination id from the list above."
     )
 
 
@@ -159,6 +183,38 @@ class TurnService:
             async for event in self._stream_turn_locked(session_id, text):
                 yield event
 
+    async def _reject_illegal_travel(
+        self,
+        session_id: str,
+        text: str,
+        state: GameState,
+    ) -> TurnResult | None:
+        destination = detect_travel_destination(text, state)
+        if destination is None:
+            return None
+        try:
+            validate_travel(state, destination)
+        except ValueError as exc:
+            destinations = reachable_destinations(state)
+            narration = rejected_travel_narration(str(exc), destinations)
+            turn_number = await self._store.add_turn(
+                session_id,
+                player_text=text,
+                narration=narration,
+                status="no_progress",
+            )
+            return TurnResult(
+                session_id=session_id,
+                turn_number=turn_number,
+                player_text=text,
+                narration=narration,
+                state=state,
+                events=[],
+                status="no_progress",
+                reachable=destinations,
+            )
+        return None
+
     async def _stream_turn_locked(
         self, session_id: str, text: str
     ) -> AsyncIterator[TurnStreamEvent]:
@@ -166,16 +222,23 @@ class TurnService:
         if state is None:
             raise KeyError(f"session not found: {session_id}")
 
+        rejected = await self._reject_illegal_travel(session_id, text, state)
+        if rejected is not None:
+            yield DoneEvent(
+                turn_number=rejected.turn_number,
+                status=rejected.status,
+                state=rejected.state,
+                narration=rejected.narration,
+                reachable=list(rejected.reachable),
+            )
+            return
+
         recent = await self._store.list_recent_turns(
             session_id,
             limit=self._settings.memory_recent_turns,
         )
         deps = TurnDeps(store=self._store, session_id=session_id)
-        prompt = (
-            f"{_format_context(state, recent)}\n\n"
-            f"Player action:\n{text}\n\n"
-            "Resolve the action. Call tools for any Check or roll before narrating the outcome."
-        )
+        prompt = _format_turn_prompt(state, recent, text)
 
         status = "ok"
         narration_parts: list[str] = []
@@ -209,9 +272,7 @@ class TurnService:
                             await_tick += 1
                             yield ProgressEvent(
                                 phase="awaiting_dm",
-                                label=_AWAITING_OPENERS[
-                                    await_tick % len(_AWAITING_OPENERS)
-                                ],
+                                label=_AWAITING_OPENERS[await_tick % len(_AWAITING_OPENERS)],
                             )
                         yield ToolCallEvent(tool_name=tool_name, args=args)
                     elif isinstance(agent_event, FunctionToolResultEvent):
@@ -227,9 +288,7 @@ class TurnService:
                             await_tick += 1
                             yield ProgressEvent(
                                 phase="awaiting_dm",
-                                label=_AWAITING_AFTER_ROLL[
-                                    await_tick % len(_AWAITING_AFTER_ROLL)
-                                ],
+                                label=_AWAITING_AFTER_ROLL[await_tick % len(_AWAITING_AFTER_ROLL)],
                             )
                     elif isinstance(agent_event, PartStartEvent) and isinstance(
                         agent_event.part, TextPart
@@ -282,6 +341,7 @@ class TurnService:
             status=status,
             state=fresh_state,
             narration=narration,
+            reachable=reachable_destinations(fresh_state),
         )
 
     async def _maybe_update_recap(
@@ -323,20 +383,25 @@ class TurnService:
         if not text:
             raise ValueError("player_text must not be empty")
 
+        lock = await self._locks.lock_for(session_id)
+        async with lock:
+            return await self._run_turn_locked(session_id, text)
+
+    async def _run_turn_locked(self, session_id: str, text: str) -> TurnResult:
         state = await self._store.get_snapshot(session_id)
         if state is None:
             raise KeyError(f"session not found: {session_id}")
+
+        rejected = await self._reject_illegal_travel(session_id, text, state)
+        if rejected is not None:
+            return rejected
 
         recent = await self._store.list_recent_turns(
             session_id,
             limit=self._settings.memory_recent_turns,
         )
         deps = TurnDeps(store=self._store, session_id=session_id)
-        prompt = (
-            f"{_format_context(state, recent)}\n\n"
-            f"Player action:\n{text}\n\n"
-            "Resolve the action. Call tools for any Check or roll before narrating the outcome."
-        )
+        prompt = _format_turn_prompt(state, recent, text)
 
         status = "ok"
         try:
@@ -377,4 +442,5 @@ class TurnService:
             state=fresh_state,
             events=list(deps.events_this_turn),
             status=status,
+            reachable=reachable_destinations(fresh_state),
         )

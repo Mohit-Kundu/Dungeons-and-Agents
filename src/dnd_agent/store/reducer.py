@@ -80,7 +80,11 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
         return _with_character(state, character)
 
     if isinstance(event, LocationChanged):
-        return state.model_copy(update={"location": event.location})
+        visited = list(state.world.visited_location_ids)
+        if event.location not in visited:
+            visited.append(event.location)
+        world = state.world.model_copy(update={"visited_location_ids": visited})
+        return state.model_copy(update={"location": event.location, "world": world})
 
     if isinstance(event, SummaryUpdated):
         return state.model_copy(update={"summary": event.summary})

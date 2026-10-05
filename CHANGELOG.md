@@ -16,10 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ready-for-agent implementation tickets for authoritative Playable Facts, guarded Action Intents, deterministic enemy health and Quest progress, traversal guidance, and lazy Recaps
 - Authoritative Scenario PlayableWorld (Locations, exits, surroundings, Enemy Groups, Objectives) seeded into Session Snapshots
 - Lazy PlayableWorld upgrade for Sessions created before the world schema
+- Graph-constrained `move_to` with reachable destinations on Turn results, SSE `done`, DM context, and CLI
+- Deterministic no-progress Turns for illegal explicit travel attempts
 
 ### Changed
 
 - Goblin Cave Locations use stable ids; `GameState.location` stores the current Location id
+- `LocationChanged` also records visited Location ids on PlayableWorld
 
 ### Fixed
 

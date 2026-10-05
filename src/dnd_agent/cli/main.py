@@ -14,6 +14,7 @@ from dnd_agent.cli.client import ApiClient, ApiError
 from dnd_agent.cli.render import (
     TurnProgressDisplay,
     console,
+    format_reachable_destinations,
     format_stream_event,
     render_overview,
     render_state,
@@ -28,6 +29,7 @@ class ProgressDisplay(Protocol):
     def pulse(self) -> None: ...
 
     def clear(self) -> None: ...
+
 
 app = typer.Typer(
     name="dnd",
@@ -96,6 +98,15 @@ def consume_turn_stream(
                     console.print()
             if event_type == "done":
                 final_state = GameState.model_validate(event["state"])
+                reachable = event.get("reachable") or []
+                if reachable:
+                    console.print(
+                        f"[cyan]Reachable[/cyan] {format_reachable_destinations(reachable)}"
+                    )
+                elif event.get("status") == "no_progress":
+                    narration = str(event.get("narration") or "").strip()
+                    if narration and not narration_started:
+                        console.print(narration)
             elif event_type == "error":
                 continue
             else:

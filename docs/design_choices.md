@@ -275,3 +275,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Incrementally refresh after the last watermark on restore or explicit command — fresh when needed; restore/command bears latency
 - **Decision:** Remove per-Turn Recap generation. A locked refresh summarizes successful Turns after a persisted watermark when loading a played Session, running `dnd recap`, or entering `/recap`; the command does not consume a Turn.
 - **Consequences:** Normal Turns finish sooner; restore can take a model call; refresh failures preserve the last good Recap.
+
+### D-023: Interim explicit-travel short-circuit before full Action Intent
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 02 needs no-progress Turns for illegal travel before the full fail-closed Action Intent service (ticket 03 / D-020) exists. `move_to` already rejects non-reachable exits, but free-text travel could still reach the DM first.
+- **Options considered:**
+  - Wait for full Action Intent — cleanest alignment with D-020; leaves travel guardrails incomplete for this ticket
+  - Reject only inside `move_to` — state-safe; illegal travel can still be narrated without a Tool call
+  - Detect travel verb + unique Location id/name, validate exits, and short-circuit illegal attempts as `no_progress` — covers clear cases now; heuristic until ticket 03
+- **Decision:** Use the verb + unique Location heuristic as an interim pre-DM gate for travel only. Legal explicit travel still goes to the DM, which must call `move_to` with a Reachable Destination id. Ticket 03 will supersede this heuristic with structured Action Intent validation.
+- **Consequences:** Some non-verb travel phrasing still relies on `move_to` + prompt discipline; ambiguous multi-Location text is not short-circuited.
