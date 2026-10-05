@@ -209,6 +209,10 @@ def format_latest_turn(turn: LatestTurn) -> str:
 
 def render_overview(overview: SessionOverviewResponse) -> None:
     """Show Recap + latest exchange before the GameState panel."""
+    if overview.refresh_failed:
+        console.print(
+            "[yellow]Recap refresh failed; showing the last good Recap.[/yellow]"
+        )
     recap = overview.state.summary.strip()
     if recap:
         console.print(Panel(recap, title="Recap", border_style="yellow"))
@@ -221,6 +225,17 @@ def render_overview(overview: SessionOverviewResponse) -> None:
             )
         )
     render_state(overview.state)
+
+
+def render_recap(summary: str, *, failed: bool = False, refreshed: bool = False) -> None:
+    if failed:
+        console.print(
+            "[yellow]Recap refresh failed; showing the last good Recap.[/yellow]"
+        )
+    elif refreshed:
+        console.print("[dim]Recap updated.[/dim]")
+    text = summary.strip() or "(empty)"
+    console.print(Panel(text, title="Recap", border_style="yellow"))
 
 
 def render_state(state: GameState) -> None:

@@ -4,23 +4,17 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
+from dnd_agent.api.deps import recap_refresh_from_app, store_from_app
 from dnd_agent.api.schemas import (
     CreateSessionRequest,
     EventListResponse,
     LatestTurn,
+    RecapRefreshResponse,
     SessionOverviewResponse,
     SessionStateResponse,
 )
-from dnd_agent.store.event_store import EventStore
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
-
-
-def _store(request: Request) -> EventStore:
-    store = getattr(request.app.state, "store", None)
-    if not isinstance(store, EventStore):
-        raise RuntimeError("EventStore is not configured on the app")
-    return store
 
 
 @router.post("", response_model=SessionStateResponse, status_code=201)
@@ -28,7 +22,7 @@ async def create_session(
     body: CreateSessionRequest,
     request: Request,
 ) -> SessionStateResponse:
-    store = _store(request)
+    store = store_from_app(request)
     return await store.create_session(
         scenario_id=body.scenario_id,
         character_id=body.character_id,
@@ -38,7 +32,7 @@ async def create_session(
 
 @router.get("/{session_id}/state", response_model=SessionStateResponse)
 async def get_state(session_id: str, request: Request) -> SessionStateResponse:
-    store = _store(request)
+    store = store_from_app(request)
     state = await store.get_snapshot(session_id)
     if state is None:
         raise HTTPException(status_code=404, detail=f"session not found: {session_id}")
@@ -47,7 +41,7 @@ async def get_state(session_id: str, request: Request) -> SessionStateResponse:
 
 @router.get("/{session_id}/events", response_model=EventListResponse)
 async def get_events(session_id: str, request: Request) -> EventListResponse:
-    store = _store(request)
+    store = store_from_app(request)
     state = await store.get_snapshot(session_id)
     if state is None:
         raise HTTPException(status_code=404, detail=f"session not found: {session_id}")
@@ -57,12 +51,28 @@ async def get_events(session_id: str, request: Request) -> EventListResponse:
 
 @router.get("/{session_id}/overview", response_model=SessionOverviewResponse)
 async def get_overview(session_id: str, request: Request) -> SessionOverviewResponse:
-    store = _store(request)
-    state = await store.get_snapshot(session_id)
-    if state is None:
+    store = store_from_app(request)
+    if await store.get_snapshot(session_id) is None:
         raise HTTPException(status_code=404, detail=f"session not found: {session_id}")
+    # Restore path: refresh Recap for played Sessions before displaying.
+    refreshed = await recap_refresh_from_app(request).refresh(session_id)
     latest = await store.get_latest_turn(session_id)
     return SessionOverviewResponse(
-        state=state,
+        state=refreshed.state,
         latest_turn=LatestTurn.model_validate(latest) if latest is not None else None,
+        refreshed=refreshed.refreshed,
+        refresh_failed=refreshed.failed,
+    )
+
+
+@router.post("/{session_id}/recap", response_model=RecapRefreshResponse)
+async def refresh_recap(session_id: str, request: Request) -> RecapRefreshResponse:
+    store = store_from_app(request)
+    if await store.get_snapshot(session_id) is None:
+        raise HTTPException(status_code=404, detail=f"session not found: {session_id}")
+    result = await recap_refresh_from_app(request).refresh(session_id)
+    return RecapRefreshResponse(
+        state=result.state,
+        refreshed=result.refreshed,
+        failed=result.failed,
     )

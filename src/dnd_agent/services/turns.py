@@ -22,9 +22,8 @@ from pydantic_ai.usage import UsageLimits
 from dnd_agent.agent.deps import TurnDeps
 from dnd_agent.agent.dm_agent import build_dm_agent
 from dnd_agent.agent.providers import resolve_model
-from dnd_agent.agent.recap import RecapService
 from dnd_agent.config import Settings, get_settings
-from dnd_agent.domain.events import Event, SummaryUpdated
+from dnd_agent.domain.events import Event
 from dnd_agent.domain.models import GameState
 from dnd_agent.services.session_locks import SessionLockRegistry
 from dnd_agent.services.stream_events import (
@@ -60,7 +59,6 @@ from dnd_agent.world.travel import (
     format_reachable_lines,
     reachable_destinations,
 )
-
 ROLLING_TOOLS = frozenset({"skill_check", "saving_throw", "roll_dice", "short_rest"})
 
 _AWAITING_OPENERS = (
@@ -195,7 +193,6 @@ class TurnService:
         settings: Settings | None = None,
         model: Model | str | None = None,
         locks: SessionLockRegistry | None = None,
-        recap: RecapService | None = None,
         intent: IntentProposer | None = None,
     ) -> None:
         self._store = store
@@ -206,7 +203,6 @@ class TurnService:
             retries=self._settings.agent_retries,
         )
         self._locks = locks if locks is not None else SessionLockRegistry()
-        self._recap = recap if recap is not None else RecapService(self._model)
         self._intent: IntentProposer = intent if intent is not None else CodeIntentService()
 
     async def stream_turn(
@@ -376,14 +372,6 @@ class TurnService:
             deps.events_this_turn.append(domain_event)
             for stream_event in _domain_stream_events(domain_event):
                 yield stream_event
-        async for progress in self._maybe_update_recap(
-            session_id,
-            player_text=text,
-            narration=narration,
-            events=list(deps.events_this_turn),
-            status=status,
-        ):
-            yield progress
         fresh_state = await self._store.get_snapshot(session_id)
         assert fresh_state is not None
         reachable, objectives, enemies = _turn_guidance(fresh_state)
@@ -396,40 +384,6 @@ class TurnService:
             incomplete_objectives=objectives,
             enemies=enemies,
         )
-
-    async def _maybe_update_recap(
-        self,
-        session_id: str,
-        *,
-        player_text: str,
-        narration: str,
-        events: list[Event],
-        status: str,
-    ) -> AsyncIterator[ProgressEvent]:
-        """Best-effort Recap write for successful Turns; never fails the Turn."""
-        if status != "ok":
-            return
-        prior = await self._store.get_snapshot(session_id)
-        if prior is None:
-            return
-        yield ProgressEvent(
-            phase="updating_recap",
-            label="Updating the Recap",
-        )
-        try:
-            summary = await self._recap.generate(
-                prior_summary=prior.summary,
-                player_text=player_text,
-                narration=narration,
-                events=events,
-            )
-            if summary.strip() and summary.strip() != prior.summary.strip():
-                await self._store.append_event(
-                    session_id,
-                    SummaryUpdated(summary=summary.strip(), reason="turn_recap"),
-                )
-        except Exception:  # noqa: BLE001 - Recap must not abort the Turn
-            return
 
     async def run_turn(self, session_id: str, player_text: str) -> TurnResult:
         text = player_text.strip()
@@ -480,14 +434,6 @@ class TurnService:
         )
         progress_events = await self._apply_progress(session_id)
         deps.events_this_turn.extend(progress_events)
-        async for _progress in self._maybe_update_recap(
-            session_id,
-            player_text=text,
-            narration=narration,
-            events=list(deps.events_this_turn),
-            status=status,
-        ):
-            pass
         fresh_state = await self._store.get_snapshot(session_id)
         assert fresh_state is not None
         reachable, objectives, enemies = _turn_guidance(fresh_state)

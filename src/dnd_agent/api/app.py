@@ -28,6 +28,7 @@ def create_app(
     settings: Settings | None = None,
     store: EventStore | None = None,
     turn_model: Model | str | None = None,
+    recap_model: Model | str | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
 
@@ -37,10 +38,12 @@ def create_app(
         await app_store.open()
         app.state.store = app_store
         app.state.turn_model = turn_model
+        app.state.recap_model = recap_model
         yield
 
     app = FastAPI(title="D&D Agent", version="0.1.0", lifespan=lifespan)
     app.state.turn_model = turn_model
+    app.state.recap_model = recap_model
     app.state.session_locks = SessionLockRegistry()
     app.include_router(sessions_router)
     app.include_router(turns_router)

@@ -6,14 +6,15 @@ import json
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from pydantic_ai.models import Model
 
-from dnd_agent.services.session_locks import SessionLockRegistry
+from dnd_agent.agent.providers import resolve_model
+from dnd_agent.api.deps import locks_from_app, recap_refresh_from_app, store_from_app
+from dnd_agent.api.schemas import RecapRefreshResponse
+from dnd_agent.config import get_settings
 from dnd_agent.services.stream_events import TurnStreamEvent
 from dnd_agent.services.turns import TurnService
-from dnd_agent.store.event_store import EventStore
 from dnd_agent.world.intent import CodeIntentService, IntentProposer, IntentService
 
 router = APIRouter(tags=["turns"])
@@ -23,23 +24,8 @@ class PlayTurnRequest(BaseModel):
     player_text: str = Field(min_length=1)
 
 
-def _store(request: Request) -> EventStore:
-    store = getattr(request.app.state, "store", None)
-    if not isinstance(store, EventStore):
-        raise RuntimeError("EventStore is not configured on the app")
-    return store
-
-
-def _turn_model(request: Request) -> Model | str | None:
+def _turn_model(request: Request):
     return getattr(request.app.state, "turn_model", None)
-
-
-def _locks(request: Request) -> SessionLockRegistry:
-    locks = getattr(request.app.state, "session_locks", None)
-    if not isinstance(locks, SessionLockRegistry):
-        locks = SessionLockRegistry()
-        request.app.state.session_locks = locks
-    return locks
 
 
 def _intent_service(request: Request) -> IntentProposer:
@@ -50,9 +36,6 @@ def _intent_service(request: Request) -> IntentProposer:
     if _turn_model(request) is not None:
         # FunctionModel / injected DM models must not also drive intent extraction.
         return CodeIntentService()
-    from dnd_agent.agent.providers import resolve_model
-    from dnd_agent.config import get_settings
-
     return IntentService(resolve_model(get_settings()))
 
 
@@ -62,13 +45,13 @@ def _sse_message(event: TurnStreamEvent) -> str:
     return f"event: {event.type}\ndata: {data}\n\n"
 
 
-@router.post("/sessions/{session_id}/turns")
+@router.post("/sessions/{session_id}/turns", response_model=None)
 async def play_turn(
     session_id: str,
     body: PlayTurnRequest,
     request: Request,
-) -> StreamingResponse:
-    store = _store(request)
+) -> StreamingResponse | JSONResponse:
+    store = store_from_app(request)
     if await store.get_snapshot(session_id) is None:
         raise HTTPException(status_code=404, detail=f"session not found: {session_id}")
 
@@ -76,10 +59,20 @@ async def play_turn(
     if not text:
         raise HTTPException(status_code=400, detail="player_text must not be empty")
 
+    # In-play `/recap`: same refresh operation, no DM Turn.
+    if text.casefold() == "/recap":
+        result = await recap_refresh_from_app(request).refresh(session_id)
+        payload = RecapRefreshResponse(
+            state=result.state,
+            refreshed=result.refreshed,
+            failed=result.failed,
+        )
+        return JSONResponse(payload.model_dump(mode="json"))
+
     service = TurnService(
         store,
         model=_turn_model(request),
-        locks=_locks(request),
+        locks=locks_from_app(request),
         intent=_intent_service(request),
     )
 

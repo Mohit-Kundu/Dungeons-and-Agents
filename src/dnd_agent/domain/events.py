@@ -155,6 +155,7 @@ class SummaryUpdated(BaseModel):
 
     type: Literal["summary_updated"] = "summary_updated"
     summary: str
+    through_turn: int = Field(default=0, ge=0)
     reason: str = ""
 
 

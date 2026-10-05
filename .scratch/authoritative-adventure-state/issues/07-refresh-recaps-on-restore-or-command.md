@@ -4,12 +4,12 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Successful and aborted Turns do not invoke Recap generation or emit an updating-Recap progress phase.
-- [ ] A locked refresh operation summarizes only successful Turns after the persisted Recap watermark and advances that watermark atomically with the Recap Event.
-- [ ] Loading a previously played Session refreshes before displaying its Recap and latest exchange; a new Session with no Turns does not call the model.
-- [ ] `dnd recap` refreshes and displays the Session Recap.
-- [ ] In-play `/recap` uses the same operation without invoking the DM or recording a Turn.
-- [ ] Refresh failure preserves and displays the last good Recap without preventing Session load.
-- [ ] Automated tests cover incremental refresh, repeated no-op refresh, command behavior, restore behavior, model failure, concurrency, Event replay, API, and CLI output.
+- [x] Successful and aborted Turns do not invoke Recap generation or emit an updating-Recap progress phase.
+- [x] A locked refresh operation summarizes only successful Turns after the persisted Recap watermark and advances that watermark atomically with the Recap Event.
+- [x] Loading a previously played Session refreshes before displaying its Recap and latest exchange; a new Session with no Turns does not call the model.
+- [x] `dnd recap` refreshes and displays the Session Recap.
+- [x] In-play `/recap` uses the same operation without invoking the DM or recording a Turn.
+- [x] Refresh failure preserves and displays the last good Recap without preventing Session load.
+- [x] Automated tests cover incremental refresh, repeated no-op refresh, command behavior, restore behavior, model failure, concurrency, Event replay, API, and CLI output.

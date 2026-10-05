@@ -108,9 +108,14 @@ def test_summary_updated_replaces_recap_and_survives_fold() -> None:
         rng_seed=3,
         summary="Briefing seed.",
     )
-    updated = SummaryUpdated(summary="Brynn found goblin tracks near the cave mouth.")
+    updated = SummaryUpdated(
+        summary="Brynn found goblin tracks near the cave mouth.",
+        through_turn=2,
+        reason="lazy_recap",
+    )
 
     state = fold_events([created, updated])
 
     assert state.summary == "Brynn found goblin tracks near the cave mouth."
+    assert state.recap_through_turn == 2
     assert apply_event(apply_event(None, created), updated).summary == state.summary

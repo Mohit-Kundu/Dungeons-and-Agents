@@ -10,7 +10,6 @@ import pytest
 from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, DeltaToolCall, FunctionModel
 
-from dnd_agent.agent.recap import RecapService
 from dnd_agent.domain.events import SkillCheckResolved, SummaryUpdated
 from dnd_agent.services.session_locks import SessionLockRegistry
 from dnd_agent.services.stream_events import (
@@ -87,89 +86,37 @@ async def test_stream_turn_emits_tool_roll_narration_and_done(store: EventStore)
     assert done.state.session_id == state.session_id
 
 
-def _recap_model(text: str = "Brynn spotted goblin tracks at the cave mouth.") -> FunctionModel:
-    async def reply(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
-        return ModelResponse(parts=[TextPart(content=text)])
-
-    return FunctionModel(reply)
-
-
-def _failing_recap_model() -> FunctionModel:
-    async def reply(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
-        raise RuntimeError("recap model unavailable")
-
-    return FunctionModel(reply)
-
-
-async def test_stream_turn_persists_recap_before_done(store: EventStore) -> None:
+async def test_successful_and_aborted_turns_skip_recap_generation(store: EventStore) -> None:
     state = await store.create_session(scenario_id="goblin_cave", rng_seed=42)
     prior = state.summary
-    service = TurnService(
-        store,
-        model=_streaming_skill_check_model(),
-        recap=RecapService(_recap_model()),
-    )
-
-    events = [event async for event in service.stream_turn(state.session_id, "I search.")]
-
-    recap_progress = [
-        event
-        for event in events
-        if isinstance(event, ProgressEvent) and event.phase == "updating_recap"
+    ok_service = TurnService(store, model=_streaming_skill_check_model())
+    ok_events = [
+        event async for event in ok_service.stream_turn(state.session_id, "I search.")
     ]
-    assert recap_progress
-    done = next(event for event in events if isinstance(event, DoneEvent))
-    assert done.status == "ok"
-    assert done.state.summary == "Brynn spotted goblin tracks at the cave mouth."
-    assert done.state.summary != prior
-
-    persisted = await store.list_events(state.session_id)
-    assert any(isinstance(event, SummaryUpdated) for event in persisted)
-    snapshot = await store.get_snapshot(state.session_id)
-    assert snapshot is not None
-    assert snapshot.summary == done.state.summary
-
-
-async def test_aborted_turn_skips_recap_update(store: EventStore) -> None:
-    state = await store.create_session(scenario_id="goblin_cave", rng_seed=9)
-    prior = state.summary
-    service = TurnService(
-        store,
-        model=_abort_after_check_model(),
-        recap=RecapService(_recap_model("should not be written")),
-    )
-
-    events = [
-        event async for event in service.stream_turn(state.session_id, "I look around.")
-    ]
-
-    done = next(event for event in events if isinstance(event, DoneEvent))
-    assert done.status == "aborted"
-    assert done.state.summary == prior
+    ok_done = next(event for event in ok_events if isinstance(event, DoneEvent))
+    assert ok_done.status == "ok"
+    assert ok_done.state.summary == prior
     assert not any(
         isinstance(event, ProgressEvent) and event.phase == "updating_recap"
-        for event in events
+        for event in ok_events
     )
-    persisted = await store.list_events(state.session_id)
-    assert not any(isinstance(event, SummaryUpdated) for event in persisted)
-
-
-async def test_recap_failure_keeps_prior_summary_and_ok_turn(store: EventStore) -> None:
-    state = await store.create_session(scenario_id="goblin_cave", rng_seed=42)
-    prior = state.summary
-    service = TurnService(
-        store,
-        model=_streaming_skill_check_model(),
-        recap=RecapService(_failing_recap_model()),
+    assert not any(
+        isinstance(event, SummaryUpdated)
+        for event in await store.list_events(state.session_id)
     )
 
-    events = [event async for event in service.stream_turn(state.session_id, "I search.")]
-
-    done = next(event for event in events if isinstance(event, DoneEvent))
-    assert done.status == "ok"
-    assert done.state.summary == prior
-    persisted = await store.list_events(state.session_id)
-    assert not any(isinstance(event, SummaryUpdated) for event in persisted)
+    aborted_service = TurnService(store, model=_abort_after_check_model())
+    aborted_events = [
+        event
+        async for event in aborted_service.stream_turn(state.session_id, "I look around.")
+    ]
+    aborted_done = next(event for event in aborted_events if isinstance(event, DoneEvent))
+    assert aborted_done.status == "aborted"
+    assert aborted_done.state.summary == prior
+    assert not any(
+        isinstance(event, ProgressEvent) and event.phase == "updating_recap"
+        for event in aborted_events
+    )
 
 
 async def test_stream_turn_emits_progress_phases_around_check(store: EventStore) -> None:

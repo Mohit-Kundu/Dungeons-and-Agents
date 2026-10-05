@@ -267,7 +267,12 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
         return state.model_copy(update={"quest": quest})
 
     if isinstance(event, SummaryUpdated):
-        return state.model_copy(update={"summary": event.summary})
+        return state.model_copy(
+            update={
+                "summary": event.summary,
+                "recap_through_turn": event.through_turn,
+            }
+        )
 
     raise TypeError(f"unsupported event type: {type(event)!r}")
 

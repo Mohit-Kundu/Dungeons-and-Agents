@@ -4,6 +4,30 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 07 (authoritative-adventure-state): lazy Recap refresh
+
+### Done
+
+- Removed per-Turn Recap generation and `updating_recap` progress from TurnService
+- `RecapRefreshService` folds successful Turns after `recap_through_turn`, locking the Session and writing `SummaryUpdated(through_turn=…)`
+- Restore via `GET /overview`, `POST /recap`, `dnd recap`, and in-play `/recap` share the same refresh; failures keep the last good Recap
+- New Sessions with no Turns skip the model; repeated refresh is a no-op
+- Recorded D-028 for watermark-on-`SummaryUpdated`
+
+### Broken / surprises
+
+- FastAPI needs `response_model=None` when `/turns` can return either SSE or JSON for `/recap`
+
+### Learned
+
+- Watermark belongs on the Recap Event so replay and Snapshot stay aligned without a side table
+
+### Next
+
+- Ticket 08: verify guarded adventure end-to-end
+
+---
+
 ## 2026-10-04 — Ticket 06 (authoritative-adventure-state): complete objectives and Quests
 
 ### Done

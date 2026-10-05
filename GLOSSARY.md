@@ -118,7 +118,7 @@ Avoid: prologue (prefer Briefing), system prompt dump.
 
 ## Recap
 
-A concise LLM-written summary of what has happened in a Session so far. Stored in `GameState.summary` via immutable `summary_updated` Events. Refreshed lazily on Session restore or an explicit Recap command (not after every Turn). Shown together with the latest Turn.
+A concise LLM-written summary of what has happened in a Session so far. Stored in `GameState.summary` via immutable `summary_updated` Events. Refreshed lazily on Session restore or an explicit Recap command (not after every Turn). A `recap_through_turn` watermark tracks which successful Turns are already folded in. Shown together with the latest Turn.
 
 Avoid: synopsis, campaign journal (narration flavor only), memory (broader than Recap).
 

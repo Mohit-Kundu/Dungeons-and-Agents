@@ -165,4 +165,5 @@ class GameState(BaseModel):
     quest: Quest
     rng_seed: int
     summary: str = ""
+    recap_through_turn: int = Field(default=0, ge=0)
     world: PlayableWorld = Field(default_factory=PlayableWorld)

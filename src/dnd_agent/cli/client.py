@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from dnd_agent.api.schemas import SessionOverviewResponse
+from dnd_agent.api.schemas import RecapRefreshResponse, SessionOverviewResponse
 from dnd_agent.cli.sse import iter_sse_data
 from dnd_agent.domain.events import EVENT_ADAPTER, Event
 from dnd_agent.domain.models import GameState
@@ -65,6 +65,11 @@ class ApiClient:
         response = self._client.get(f"/sessions/{session_id}/overview")
         self._raise_for_status(response)
         return SessionOverviewResponse.model_validate(response.json())
+
+    def refresh_recap(self, session_id: str) -> RecapRefreshResponse:
+        response = self._client.post(f"/sessions/{session_id}/recap")
+        self._raise_for_status(response)
+        return RecapRefreshResponse.model_validate(response.json())
 
     def list_events(self, session_id: str) -> list[Event]:
         response = self._client.get(f"/sessions/{session_id}/events")

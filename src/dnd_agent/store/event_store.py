@@ -267,6 +267,37 @@ class EventStore:
         turns.reverse()
         return turns
 
+    async def list_successful_turns_after(
+        self,
+        session_id: str,
+        *,
+        after_turn: int,
+    ) -> list[dict[str, Any]]:
+        """Return successful Turns with turn_number greater than after_turn, ascending."""
+        await self._ensure_open()
+        async with aiosqlite.connect(self._db_path) as db:
+            cursor = await db.execute(
+                """
+                SELECT turn_number, player_text, narration, status
+                FROM turns
+                WHERE session_id = ?
+                  AND turn_number > ?
+                  AND status = 'ok'
+                ORDER BY turn_number ASC
+                """,
+                (session_id, after_turn),
+            )
+            rows = await cursor.fetchall()
+        return [
+            {
+                "turn_number": turn_number,
+                "player_text": player_text,
+                "narration": narration,
+                "status": status,
+            }
+            for turn_number, player_text, narration, status in rows
+        ]
+
     async def get_latest_turn(self, session_id: str) -> dict[str, Any] | None:
         turns = await self.list_recent_turns(session_id, limit=1)
         return turns[-1] if turns else None

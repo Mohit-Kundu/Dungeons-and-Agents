@@ -276,6 +276,18 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
 - **Decision:** Remove per-Turn Recap generation. A locked refresh summarizes successful Turns after a persisted watermark when loading a played Session, running `dnd recap`, or entering `/recap`; the command does not consume a Turn.
 - **Consequences:** Normal Turns finish sooner; restore can take a model call; refresh failures preserve the last good Recap.
 
+### D-028: Recap watermark lives on SummaryUpdated / GameState
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 07 / D-022 needs incremental refresh of only successful Turns after the last Recap without a side table that diverges from Event replay.
+- **Options considered:**
+  - Separate sessions.recap_through_turn column — simple reads; not in the Event log
+  - Infer watermark by scanning SummaryUpdated payloads without a field — ambiguous for legacy Events
+  - Carry `through_turn` on each `SummaryUpdated` and fold into `GameState.recap_through_turn` — replayable and atomic with the Recap write
+- **Decision:** `SummaryUpdated` includes `through_turn`. The Reducer sets `GameState.recap_through_turn` with the summary. Refresh lists successful Turns with `turn_number > recap_through_turn`, then appends one Event advancing both fields.
+- **Consequences:** Legacy Recap Events default `through_turn` to 0; equal-text refreshes still write an Event so the watermark advances.
+
 ### D-023: Interim explicit-travel short-circuit before full Action Intent
 
 - **Date:** 2026-10-04

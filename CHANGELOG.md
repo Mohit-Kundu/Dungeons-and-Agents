@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typed `take_item` / `use_item` Tools with `ItemTaken` / `ItemConsumed` Events for portable transfer and consumable quantity changes
 - Check-gated `resolve_enemy` Tool with `EnemyGroupDamaged` Events for deterministic Enemy Group aggregate HP
 - Deterministic Objective/Quest completion via `ObjectiveCompleted` / `QuestCompleted` Events and Turn guidance
+- Lazy Recap refresh on Session restore / `dnd recap` / in-play `/recap` with `recap_through_turn` watermark
 
 ### Changed
 
@@ -33,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - D-026: unused successful Checks this Turn gate `resolve_enemy`
 - Turn `done` / `TurnResult` expose incomplete objectives and Enemy Group health alongside reachable destinations
 - D-027: predicate-driven Objective and Quest completion after Turn mutations
+- D-019 per-Turn Recaps superseded by D-022 lazy restore/command refresh; Turns no longer emit `updating_recap`
+- D-028: Recap watermark (`through_turn`) is carried on `SummaryUpdated` into `GameState.recap_through_turn`
 
 ### Fixed
 

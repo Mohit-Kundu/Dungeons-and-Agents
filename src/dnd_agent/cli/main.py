@@ -19,6 +19,7 @@ from dnd_agent.cli.render import (
     format_reachable_destinations,
     format_stream_event,
     render_overview,
+    render_recap,
     render_state,
 )
 from dnd_agent.config import get_settings
@@ -166,6 +167,17 @@ def show_state(session_id: str = typer.Argument(..., help="Session id")) -> None
     render_overview(overview)
 
 
+@app.command("recap")
+def show_recap(session_id: str = typer.Argument(..., help="Session id")) -> None:
+    """Refresh and display the Session Recap without playing a Turn."""
+    result = _with_api(lambda client: client.refresh_recap(session_id), hint_serve=True)
+    render_recap(
+        result.state.summary,
+        failed=result.failed,
+        refreshed=result.refreshed,
+    )
+
+
 @app.command("log")
 def show_log(session_id: str = typer.Argument(..., help="Session id")) -> None:
     """List Events for a Session."""
@@ -177,17 +189,25 @@ def show_log(session_id: str = typer.Argument(..., help="Session id")) -> None:
 @app.command("play")
 def play_turn(
     session_id: str = typer.Argument(..., help="Session id"),
-    action: str = typer.Argument(..., help="Player action text"),
+    action: str = typer.Argument(..., help="Player action text, or /recap"),
 ) -> None:
     """Play one Turn: stream narration and mechanical Events over SSE."""
 
     def _consume(client: ApiClient) -> GameState | None:
+        if action.strip().casefold() == "/recap":
+            result = client.refresh_recap(session_id)
+            render_recap(
+                result.state.summary,
+                failed=result.failed,
+                refreshed=result.refreshed,
+            )
+            return result.state
         render_overview(client.get_overview(session_id))
         console.print()
         return consume_turn_stream(client.play_turn(session_id, action))
 
     state = _with_api(_consume, hint_serve=True)
-    if state is not None:
+    if state is not None and action.strip().casefold() != "/recap":
         render_state(state)
 
 

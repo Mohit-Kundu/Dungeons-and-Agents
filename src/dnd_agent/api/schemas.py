@@ -31,6 +31,16 @@ class SessionOverviewResponse(BaseModel):
 
     state: GameState
     latest_turn: LatestTurn | None = None
+    refreshed: bool = False
+    refresh_failed: bool = False
+
+
+class RecapRefreshResponse(BaseModel):
+    """Result of an explicit Recap refresh command."""
+
+    state: GameState
+    refreshed: bool
+    failed: bool = False
 
 
 # Re-export GameState as the Session Snapshot response body.
