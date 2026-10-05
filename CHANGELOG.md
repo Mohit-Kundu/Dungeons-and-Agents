@@ -13,8 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI animated wait indicator (cycling ellipsis) and dramatic Check/Save/roll reveals during `dnd play`
 - LLM Session Recap after each Turn via immutable `summary_updated` Events into `GameState.summary`
 - `GET /sessions/{id}/overview` and CLI restore view (Recap + latest Turn) on `dnd state` / before `dnd play`
+- Ready-for-agent implementation tickets for authoritative Playable Facts, guarded Action Intents, deterministic enemy health and Quest progress, traversal guidance, and lazy Recaps
+- Authoritative Scenario PlayableWorld (Locations, exits, surroundings, Enemy Groups, Objectives) seeded into Session Snapshots
+- Lazy PlayableWorld upgrade for Sessions created before the world schema
 
 ### Changed
+
+- Goblin Cave Locations use stable ids; `GameState.location` stores the current Location id
 
 ### Fixed
 

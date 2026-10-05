@@ -27,7 +27,7 @@ def test_cli_client_creates_and_reads_session(api_client: ApiClient) -> None:
     events = api_client.list_events(state.session_id)
 
     assert loaded.character.name == "Brynn Ironfoot"
-    assert loaded.location == "Cave Mouth"
+    assert loaded.location == "cave_mouth"
     assert loaded.rng_seed == 5
     assert len(events) == 1
     assert events[0].type == "session_created"

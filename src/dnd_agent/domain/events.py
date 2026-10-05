@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter
 
-from dnd_agent.domain.models import Character, Quest
+from dnd_agent.domain.models import Character, PlayableWorld, Quest
 
 
 class SessionCreated(BaseModel):
@@ -18,6 +18,7 @@ class SessionCreated(BaseModel):
     quest: Quest
     rng_seed: int
     summary: str = ""
+    world: PlayableWorld = Field(default_factory=PlayableWorld)
 
 
 class DiceRolled(BaseModel):

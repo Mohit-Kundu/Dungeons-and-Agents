@@ -31,7 +31,8 @@ async def test_create_session_persists_and_reloads_snapshot(store: EventStore) -
     assert loaded.scenario_id == "goblin_cave"
     assert loaded.character.id == "pregen_fighter"
     assert loaded.character.name == "Brynn Ironfoot"
-    assert loaded.location == "Cave Mouth"
+    assert loaded.location == "cave_mouth"
+    assert loaded.world.is_seeded()
     assert loaded.quest.id == "clear_cave"
     assert loaded.rng_seed == 42
 
@@ -74,4 +75,5 @@ async def test_content_loader_reads_predefined_assets() -> None:
     assert character.name == "Brynn Ironfoot"
     assert scenario.id == "goblin_cave"
     assert scenario.character_id == "pregen_fighter"
-    assert scenario.starting_location == "Cave Mouth"
+    assert scenario.starting_location == "cave_mouth"
+    assert {location.id for location in scenario.locations} >= {"cave_mouth"}

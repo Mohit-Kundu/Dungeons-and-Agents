@@ -33,9 +33,7 @@ def _scripted_tool(tool_name: str | None, args: dict | None, narration: str) -> 
     async def reply(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
         calls["n"] += 1
         if tool_name and calls["n"] == 1:
-            return ModelResponse(
-                parts=[ToolCallPart(tool_name=tool_name, args=args or {})]
-            )
+            return ModelResponse(parts=[ToolCallPart(tool_name=tool_name, args=args or {})])
         return ModelResponse(parts=[TextPart(content=narration)])
 
     return FunctionModel(reply)
@@ -84,7 +82,7 @@ async def test_goblin_cave_playthrough_covers_poc_loop(store: EventStore) -> Non
         state.session_id,
         "I follow the tracks into the twisting tunnel.",
         tool_name="move_to",
-        args={"location": "Twisting Tunnel", "reason": "follow tracks"},
+        args={"location": "twisting_tunnel", "reason": "follow tracks"},
         narration="The tunnel narrows; the air tastes wrong.",
     )
     assert any(isinstance(event, LocationChanged) for event in result.events)
@@ -116,7 +114,7 @@ async def test_goblin_cave_playthrough_covers_poc_loop(store: EventStore) -> Non
         state.session_id,
         "I press into the den and grab a crate, then withdraw.",
         tool_name="move_to",
-        args={"location": "Goblin Den", "reason": "recover goods"},
+        args={"location": "goblin_den", "reason": "recover goods"},
         narration="You snatch a crate and slip back toward open air.",
     )
     assert any(isinstance(event, LocationChanged) for event in result.events)
@@ -134,7 +132,8 @@ async def test_goblin_cave_playthrough_covers_poc_loop(store: EventStore) -> Non
     snapshot = await store.get_snapshot(state.session_id)
     events = await store.list_events(state.session_id)
     assert snapshot is not None
-    assert snapshot.location == "Goblin Den"
+    assert snapshot.location == "goblin_den"
+    assert snapshot.world.is_seeded()
     assert snapshot.character.conditions == []
     assert snapshot.character.hp == snapshot.character.max_hp
     assert len(events) >= 7

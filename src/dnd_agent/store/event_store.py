@@ -81,6 +81,7 @@ class EventStore:
         sid = session_id or f"sess_{secrets.token_hex(4)}"
         seed = rng_seed if rng_seed is not None else secrets.randbelow(2**31)
 
+        world = scenario.build_world(current_location_id=scenario.starting_location)
         event = SessionCreated(
             session_id=sid,
             scenario_id=scenario.id,
@@ -89,6 +90,7 @@ class EventStore:
             quest=scenario.quest,
             rng_seed=seed,
             summary=scenario.briefing(),
+            world=world,
         )
         state = apply_event(None, event)
         now = datetime.now(UTC).isoformat()
@@ -143,6 +145,27 @@ class EventStore:
 
         return next_state
 
+    def _ensure_playable_world(self, state: GameState) -> GameState:
+        """Lazily seed PlayableWorld for Sessions created before authoritative content."""
+        if state.world.is_seeded():
+            return state
+        scenario = load_scenario(state.scenario_id)
+        location_id = scenario.resolve_location_id(state.location) or scenario.starting_location
+        world = scenario.build_world(current_location_id=location_id)
+        return state.model_copy(update={"location": location_id, "world": world})
+
+    async def _persist_snapshot(self, state: GameState) -> None:
+        async with aiosqlite.connect(self._db_path) as db:
+            await db.execute(
+                """
+                INSERT INTO snapshots (session_id, state_json)
+                VALUES (?, ?)
+                ON CONFLICT(session_id) DO UPDATE SET state_json = excluded.state_json
+                """,
+                (state.session_id, state.model_dump_json()),
+            )
+            await db.commit()
+
     async def get_snapshot(self, session_id: str) -> GameState | None:
         await self._ensure_open()
         async with aiosqlite.connect(self._db_path) as db:
@@ -153,7 +176,11 @@ class EventStore:
             row = await cursor.fetchone()
         if row is None:
             return None
-        return GameState.model_validate_json(row[0])
+        state = GameState.model_validate_json(row[0])
+        upgraded = self._ensure_playable_world(state)
+        if upgraded != state:
+            await self._persist_snapshot(upgraded)
+        return upgraded
 
     async def list_events(self, session_id: str) -> list[Event]:
         await self._ensure_open()
@@ -177,17 +204,8 @@ class EventStore:
     async def rebuild_snapshot(self, session_id: str) -> GameState:
         """Rebuild Snapshot from the Event log (source of truth)."""
         events = await self.list_events(session_id)
-        state = fold_events(events)
-        async with aiosqlite.connect(self._db_path) as db:
-            await db.execute(
-                """
-                INSERT INTO snapshots (session_id, state_json)
-                VALUES (?, ?)
-                ON CONFLICT(session_id) DO UPDATE SET state_json = excluded.state_json
-                """,
-                (session_id, state.model_dump_json()),
-            )
-            await db.commit()
+        state = self._ensure_playable_world(fold_events(events))
+        await self._persist_snapshot(state)
         return state
 
     async def add_turn(

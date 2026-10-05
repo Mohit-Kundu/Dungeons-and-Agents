@@ -35,6 +35,7 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
             quest=event.quest.model_copy(deep=True),
             rng_seed=event.rng_seed,
             summary=event.summary,
+            world=event.world.model_copy(deep=True),
         )
 
     if state is None:
@@ -53,15 +54,11 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
         if event.condition in state.character.conditions:
             return state
         conditions = [*state.character.conditions, event.condition]
-        return _with_character(
-            state, state.character.model_copy(update={"conditions": conditions})
-        )
+        return _with_character(state, state.character.model_copy(update={"conditions": conditions}))
 
     if isinstance(event, ConditionRemoved):
         conditions = [c for c in state.character.conditions if c != event.condition]
-        return _with_character(
-            state, state.character.model_copy(update={"conditions": conditions})
-        )
+        return _with_character(state, state.character.model_copy(update={"conditions": conditions}))
 
     if isinstance(event, ShortRestCompleted):
         character = state.character.model_copy(

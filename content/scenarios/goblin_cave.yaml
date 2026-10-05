@@ -1,6 +1,6 @@
 id: goblin_cave
 title: Goblin Cave
-starting_location: Cave Mouth
+starting_location: cave_mouth
 character_id: pregen_fighter
 quest:
   id: clear_cave
@@ -12,16 +12,67 @@ intro: |
   Inside, distant goblin chatter echoes off wet stone. The village wants
   their stolen goods back — and the cave cleared.
 locations:
-  - name: Cave Mouth
+  - id: cave_mouth
+    name: Cave Mouth
     description: A low rocky opening. Muddy tracks lead inward; the hillside wind covers soft sounds.
-  - name: Twisting Tunnel
+    exits: [twisting_tunnel]
+    interactables:
+      - id: muddy_tracks
+        name: Muddy Tracks
+        description: Fresh prints lead from the hillside into the dark.
+    items: []
+  - id: twisting_tunnel
+    name: Twisting Tunnel
     description: A wet choke-point of stone. Stale air and trip-lines favor careful Checks and Saves.
-  - name: Goblin Den
-    description: A smoky chamber with bedrolls, stolen crates, and a war drum. Social pressure and fear matter more than a full fight.
+    exits: [cave_mouth, goblin_den]
+    interactables:
+      - id: trip_line
+        name: Trip Line
+        description: A crude trip-line of sinew and scavenged bells.
+    items: []
+  - id: goblin_den
+    name: Goblin Den
+    description: A smoky chamber with bedrolls, stolen crates, and a war drum.
+    exits: [twisting_tunnel]
+    interactables:
+      - id: war_drum
+        name: War Drum
+        description: A battered drum still warm from use.
+    items:
+      - id: stolen_goods
+        name: Stolen Village Goods
+        qty: 1
+enemy_groups:
+  - id: den_goblins
+    name: Goblin Raiders
+    location_id: goblin_den
+    count: 3
+    hp_per_enemy: 7
+    resolution_damage: 7
+objectives:
+  - id: reach_goblin_den
+    title: Reach the Goblin Den
+    summary: Push past the tunnel into the den.
+    predicate:
+      type: location_visited
+      location_id: goblin_den
+  - id: defeat_den_goblins
+    title: Defeat the den goblins
+    summary: Take out every goblin raider in the den.
+    predicate:
+      type: enemies_defeated
+      enemy_group_id: den_goblins
+  - id: recover_stolen_goods
+    title: Recover the stolen goods
+    summary: Carry the stolen crates out of the den.
+    predicate:
+      type: inventory_contains
+      item_id: stolen_goods
 beats:
   - Scout the Cave Mouth for tracks or sentries (skill Check).
   - Move through the Twisting Tunnel; handle a hazard with a Save or Condition.
-  - Reach the Goblin Den, recover what you can, then withdraw or rest outside.
+  - Reach the Goblin Den, defeat the raiders, recover what you can, then withdraw or rest outside.
 notes: |
-  POC scope: exploration, Checks, Saves, Conditions, and rests. There is no combat engine —
-  treat threatened fights as Checks, Saves, or retreat. Completing the quest is narrative for now.
+  Authoritative Playable Facts: Locations, exits, surroundings, Enemy Groups, and Objectives
+  are Scenario-backed. Checks and Saves still resolve uncertain fiction; completing the Quest
+  is owned by objective predicates rather than narration alone.

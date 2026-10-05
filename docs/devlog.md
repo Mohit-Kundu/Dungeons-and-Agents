@@ -4,6 +4,57 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 01 (authoritative-adventure-state): load playable world
+
+### Done
+
+- Extended Scenario YAML/models with Location ids, exits, interactables/items, Enemy Groups, and Objective predicates
+- Seeded `PlayableWorld` on `SessionCreated` / GameState; Reducer fold preserves it
+- Lazy upgrade maps legacy display-name locations onto ids without discarding Events, Turns, or Recap
+- Tests at content, reducer, EventStore, and HTTP session seams; 93 tests green
+
+### Broken / surprises
+
+- `load_scenario` is lru-cached — YAML edits need a fresh process (or cache clear) during iterative local runs
+
+### Learned
+
+- Keep upgrade logic on read/rebuild rather than rewriting the Event log so legacy payloads stay intact
+
+### Next
+
+- Ticket 02: constrain travel and show reachable destinations
+- Ticket 07: refresh Recaps only on restore or command
+
+---
+
+## 2026-10-04 — Planning: authoritative adventure state
+
+### Done
+
+- Published eight `ready-for-agent` tracer-bullet tickets with explicit blocking edges
+- Chose Scenario-backed Playable Facts, fail-closed Action Intent validation, graph-constrained travel, and deterministic objective completion
+- Chose homogeneous Enemy Groups with aggregate HP, code-owned damage deductions/counts, and check-based encounters
+- Superseded per-Turn Recaps with incremental refresh on Session restore or explicit command
+- Recorded D-020–D-022 and added the new domain vocabulary
+
+### Broken / surprises
+
+- Enemy count alone was insufficient: deterministic completion also needs predefined health and damage semantics
+- Natural-language guardrails cannot rely on prompts alone; validation must happen before DM narration
+
+### Learned
+
+- The smallest combat increment is authoritative health and damage over existing Checks, not initiative and action economy
+- Tickets 01 and 07 form the initial parallel frontier
+
+### Next
+
+- Ticket 01: load an authoritative playable world
+- Ticket 07: refresh Recaps only on restore or command
+
+---
+
 ## 2026-10-04 — Ticket 02 (turn-feedback-recaps): persistent Session Recaps
 
 ### Done

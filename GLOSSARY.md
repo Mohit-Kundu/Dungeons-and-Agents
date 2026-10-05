@@ -88,30 +88,60 @@ Avoid: chatbot, model (when referring to the agent role).
 
 ## GameState
 
-The structured current world and character truth: sheet, inventory, location, quest, conditions, and related fields.
+The structured current world and character truth: sheet, inventory, current Location id, quest, conditions, PlayableWorld, and related fields.
 
 Avoid: context (that is prompt material), memory (that is recent turns plus summary).
 
+## PlayableWorld
+
+The authoritative Playable Facts carried on GameState: Locations with exits and surroundings, Enemy Groups, Objectives, and visited Location ids. Seeded from the Scenario at Session create or via lazy upgrade.
+
+Avoid: briefing (prose seed), map (prefer Locations/exits).
+
 ## Scenario
 
-A predefined starting setup (location, quest, linked character id, intro text, optional locations/beats) loaded from `content/scenarios/`.
+A predefined starting setup loaded from `content/scenarios/`: starting Location, Quest, linked character id, intro/beats, and authoritative Playable Facts (Locations with exits, surroundings, Enemy Groups, Objectives).
 
 Avoid: adventure module (unless referring to published D&D products), campaign.
 
 ## Briefing
 
-The Scenario text seeded into `GameState.summary` at Session creation (intro, known locations, suggested beats, POC notes). Shown by `dnd new` and included in Turn context. After play starts, the rolling Recap replaces this seed in `summary`.
+The Scenario text seeded into `GameState.summary` at Session creation (intro, known locations, suggested beats, and Scenario notes). Shown by `dnd new` and included in Turn context. After play starts, the rolling Recap replaces this seed in `summary`.
 
 Avoid: prologue (prefer Briefing), system prompt dump.
 
 ## Recap
 
-A concise LLM-written summary of what has happened in a Session so far. Stored in `GameState.summary` via immutable `summary_updated` Events after each Turn. Shown on Session restore (`dnd state` / before `dnd play`) together with the latest Turn.
+A concise LLM-written summary of what has happened in a Session so far. Stored in `GameState.summary` via immutable `summary_updated` Events. Refreshed lazily on Session restore or an explicit Recap command (not after every Turn). Shown together with the latest Turn.
 
 Avoid: synopsis, campaign journal (narration flavor only), memory (broader than Recap).
 
 ## Character
 
-The player’s sheet: abilities, HP, inventory, conditions, and related fields. Distinct from GameState, which also includes location and quest.
+The player’s sheet: abilities, HP, inventory, conditions, and related fields. Distinct from GameState, which also includes current Location, Quest, and PlayableWorld.
 
 Avoid: PC sheet as a separate system name; use Character.
+
+## Playable Fact
+
+An authoritative Scenario or GameState entity that mechanics may reference, such as an inventory item, nearby interactable, enemy group, objective, or exit. Sensory details invented for narration are not Playable Facts.
+
+Avoid: world lore, prompt fact.
+
+## Action Intent
+
+The structured interpretation of a player’s natural-language action, including its action kind and referenced Playable Fact IDs. It must pass deterministic validation before DM resolution.
+
+Avoid: Tool call (the validated intent may lead the DM Agent to call a Tool).
+
+## Enemy Group
+
+A homogeneous set of enemies defined by count and HP per enemy and tracked through aggregate current HP. Remaining count and defeat are derived by code.
+
+Avoid: mob (ambiguous), encounter (broader than the enemies).
+
+## Objective
+
+A deterministic Quest requirement evaluated from Events and GameState, such as visiting a Location, carrying an item, or defeating all required Enemy Groups.
+
+Avoid: suggested beat (narrative guidance is not a completion predicate).

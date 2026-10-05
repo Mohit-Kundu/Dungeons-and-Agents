@@ -231,7 +231,7 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
 ### D-019: Persist LLM Recap after every Turn
 
 - **Date:** 2026-10-04
-- **Status:** accepted
+- **Status:** superseded by D-022
 - **Context:** Returning players need to know what happened so far and what happened last; Briefing alone is not enough after play starts.
 - **Options considered:**
   - Generate Recap only on Session load — always fresh; slows restore and costs a call each load
@@ -239,3 +239,39 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Refresh every N Turns only — cheaper; can omit intermediate detail
 - **Decision:** After each successful Turn, a no-tools Recap agent folds prior `summary` + latest exchange + mechanical Events into a new Recap; append `SummaryUpdated`. Failures keep the prior Recap and do not abort the Turn. Emit `progress` phase `updating_recap` during the wait. `GET /sessions/{id}/overview` returns Snapshot + latest Turn; CLI `state` and pre-`play` show both.
 - **Consequences:** `GameState.summary` evolves from Briefing seed into the rolling Recap; latest action stays in the turns table, not on GameState. Aborted Turns do not rewrite the Recap.
+
+### D-020: Authoritative playable facts with fail-closed intent validation
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Prompt rules cannot guarantee that the DM Agent will not use an item, target, enemy, or destination absent from the Character's inventory or current surroundings.
+- **Options considered:**
+  - Prompt and Tool errors only — smallest change; illegal actions can still appear in narration
+  - Require structured player commands — deterministic; weakens natural-language play
+  - Extract structured intent, validate it against Scenario-backed GameState, then invoke the DM — natural input with enforceable state boundaries
+- **Decision:** Scenario content and event-sourced GameState own all playable items, interactables, enemies, objectives, and exits. A fail-closed intent step resolves stable IDs and rejects unavailable or ambiguous targets before DM narration. The DM may invent sensory flavor, but flavor is not mechanically usable.
+- **Consequences:** Scenario authoring and Turn latency increase; invalid attempts are recorded as no-progress Turns; legacy Sessions need deterministic lazy upgrade.
+
+### D-021: Check-based encounters use deterministic enemy-group health
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** The POC needs enemy health, damage deductions, remaining counts, and all-defeated detection without introducing full initiative and action economy.
+- **Options considered:**
+  - Full combat engine — highest fidelity; too large for this milestone
+  - Individual enemy state — precise targeting; more state and content
+  - Homogeneous enemy groups with aggregate HP and check-based predefined damage — deterministic and incremental
+- **Decision:** Scenario enemy groups declare count, HP per enemy, and deterministic resolution damage. Successful qualifying Checks permit typed Tools to deduct aggregate HP; code derives remaining count, prevents underflow, and owns defeat and Quest predicates.
+- **Consequences:** Enemies within a group are mechanically interchangeable; narration cannot alter HP or defeat state; full combat remains future work.
+
+### D-022: Refresh Recaps lazily on restore or command
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** D-019 adds model latency and cost to every successful Turn even though Recaps are primarily needed when returning to a Session or explicitly reviewing it.
+- **Options considered:**
+  - Keep per-Turn Recaps — instant restore; recurring cost and Turn latency
+  - Render structured state without an LLM — reliable and fast; loses narrative continuity
+  - Incrementally refresh after the last watermark on restore or explicit command — fresh when needed; restore/command bears latency
+- **Decision:** Remove per-Turn Recap generation. A locked refresh summarizes successful Turns after a persisted watermark when loading a played Session, running `dnd recap`, or entering `/recap`; the command does not consume a Turn.
+- **Consequences:** Normal Turns finish sooner; restore can take a model call; refresh failures preserve the last good Recap.

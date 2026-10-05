@@ -11,4 +11,4 @@ def test_goblin_cave_briefing_includes_intro_locations_and_beats() -> None:
     assert "Cave Mouth" in briefing
     assert "Goblin Den" in briefing
     assert "Suggested beats" in briefing
-    assert "POC scope" in briefing
+    assert "Authoritative Playable Facts" in briefing

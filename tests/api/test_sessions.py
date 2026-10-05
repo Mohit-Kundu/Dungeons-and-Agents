@@ -33,9 +33,12 @@ async def test_create_session_returns_snapshot(client: AsyncClient) -> None:
     body = response.json()
     assert body["scenario_id"] == "goblin_cave"
     assert body["character"]["name"] == "Brynn Ironfoot"
-    assert body["location"] == "Cave Mouth"
+    assert body["location"] == "cave_mouth"
     assert body["rng_seed"] == 42
     assert body["session_id"].startswith("sess_")
+    assert body["world"]["locations"]
+    assert body["world"]["enemy_groups"]
+    assert body["world"]["objectives"]
 
 
 async def test_get_state_and_events(client: AsyncClient) -> None:
@@ -56,3 +59,22 @@ async def test_get_state_and_events(client: AsyncClient) -> None:
 async def test_missing_session_returns_404(client: AsyncClient) -> None:
     response = await client.get("/sessions/sess_missing/state")
     assert response.status_code == 404
+
+
+async def test_get_state_upgrades_legacy_session_without_world(tmp_path: Path) -> None:
+    from tests.unit.test_event_store_world import _insert_legacy_session
+
+    db_path = tmp_path / "api_legacy.db"
+    session_id = await _insert_legacy_session(db_path)
+    store = EventStore(db_path)
+    app = create_app(store=store)
+    app.state.store = store
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/sessions/{session_id}/state")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["location"] == "cave_mouth"
+    assert body["world"]["locations"]
+    assert body["summary"] == "Briefing seed from an older build."
