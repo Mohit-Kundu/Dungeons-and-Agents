@@ -59,6 +59,7 @@ from dnd_agent.world.travel import (
     format_reachable_lines,
     reachable_destinations,
 )
+
 ROLLING_TOOLS = frozenset({"skill_check", "saving_throw", "roll_dice", "short_rest"})
 
 _AWAITING_OPENERS = (
@@ -228,7 +229,6 @@ class TurnService:
         if validation.ok and validation.intent is not None:
             return validation.intent, None
 
-        destinations = reachable_destinations(state)
         narration = rejected_intent_narration(validation.reason or "invalid Action Intent")
         turn_number = await self._store.add_turn(
             session_id,

@@ -347,3 +347,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Evaluate predicates after Turn mutations and emit idempotent `ObjectiveCompleted` / `QuestCompleted` Events — authoritative and replayable
 - **Decision:** `plan_progress_events` evaluates Scenario predicates against GameState after each Turn. Satisfied active Objectives emit `ObjectiveCompleted` once; when none remain active the Quest emits `QuestCompleted` once. Turn results, SSE `done`, DM context, and CLI show incomplete Objectives, Enemy Group health/counts, and Reachable Destinations.
 - **Consequences:** Completion is Turn-batched rather than mid-tool; Quest stays complete on later Turns; Quest predicates beyond Goblin Cave's three types remain future work.
+
+### D-029: Guarded Goblin Cave playthrough is the milestone acceptance bar
+
+- **Date:** 2026-10-05
+- **Status:** accepted
+- **Context:** Ticket 08 needs one coherent player experience proving D-020–D-028 together: fail-closed intents, travel, inventory, enemy damage, Quest completion, Turn guidance, lazy Recaps, restore, and concurrent Turn/Recap safety. Docs still described per-Turn Recaps and open Quest completion.
+- **Options considered:**
+  - Ship without a single end-to-end harness — unit coverage already exists; regressions can slip between seams
+  - Live-provider smoke only — exercises narration; nondeterministic and slow for CI
+  - Deterministic FunctionModel playthrough plus restore/concurrency tests, and update player-facing docs to match D-022 — CI-stable acceptance for the milestone
+- **Decision:** Treat the guarded Goblin Cave FunctionModel playthrough (plus mid-play restore and shared-lock Turn/Recap concurrency) as the acceptance bar. README and architecture describe lazy Recaps and authoritative guidance; D-019 remains on record as superseded by D-022.
+- **Consequences:** Milestone docs and CI share one narrative of shipped behavior; deeper combat and multi-Scenario Quest predicates stay out of scope.

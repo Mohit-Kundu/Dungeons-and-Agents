@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dnd_agent.agent.recap import RecapService
 from dnd_agent.agent.providers import resolve_model
+from dnd_agent.agent.recap import RecapService
 from dnd_agent.config import Settings, get_settings
 from dnd_agent.domain.events import SummaryUpdated
 from dnd_agent.domain.models import GameState

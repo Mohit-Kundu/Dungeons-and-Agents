@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from dnd_agent.domain.models import GameState, Item, WorldLocation
+from dnd_agent.domain.models import GameState, WorldLocation
 
 
 class TakePlan(BaseModel):

@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Live Turn `progress` SSE phases (`awaiting_dm`, `rolling`, `updating_recap`) with player-facing labels
+- Live Turn `progress` SSE phases (`awaiting_dm`, `rolling`) with player-facing labels
 - CLI animated wait indicator (cycling ellipsis) and dramatic Check/Save/roll reveals during `dnd play`
-- LLM Session Recap after each Turn via immutable `summary_updated` Events into `GameState.summary`
+- Session Recap via immutable `summary_updated` Events into `GameState.summary` (lazy refresh; see Changed)
 - `GET /sessions/{id}/overview` and CLI restore view (Recap + latest Turn) on `dnd state` / before `dnd play`
 - Ready-for-agent implementation tickets for authoritative Playable Facts, guarded Action Intents, deterministic enemy health and Quest progress, traversal guidance, and lazy Recaps
 - Authoritative Scenario PlayableWorld (Locations, exits, surroundings, Enemy Groups, Objectives) seeded into Session Snapshots
@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Check-gated `resolve_enemy` Tool with `EnemyGroupDamaged` Events for deterministic Enemy Group aggregate HP
 - Deterministic Objective/Quest completion via `ObjectiveCompleted` / `QuestCompleted` Events and Turn guidance
 - Lazy Recap refresh on Session restore / `dnd recap` / in-play `/recap` with `recap_through_turn` watermark
+- End-to-end guarded Goblin Cave playthrough covering intent rejection, travel, inventory, enemy damage, Quest completion, mid-play restore, and concurrent Turn/Recap safety
 
 ### Changed
 
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - D-027: predicate-driven Objective and Quest completion after Turn mutations
 - D-019 per-Turn Recaps superseded by D-022 lazy restore/command refresh; Turns no longer emit `updating_recap`
 - D-028: Recap watermark (`through_turn`) is carried on `SummaryUpdated` into `GameState.recap_through_turn`
+- README, architecture, and glossary describe guarded adventure + lazy Recaps (D-029); D-019 history retained as superseded
 
 ### Fixed
 

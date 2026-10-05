@@ -49,32 +49,34 @@ uv run dnd state <session_id>
 uv run dnd log <session_id>
 ```
 
-`dnd new` creates a Session of **Goblin Cave** with Brynn Ironfoot, prints the Briefing, and shows the Snapshot. `dnd state` (and the start of `dnd play`) show the rolling Recap plus the latest Turn. `dnd play` streams live progress (waiting / rolling / Recap update), mechanical reveals, and narration over SSE.
+`dnd new` creates a Session of **Goblin Cave** with Brynn Ironfoot, prints the Briefing, and shows the Snapshot. `dnd state` (and the start of `dnd play`) refresh the Recap if needed, then show it with the latest Turn. `dnd recap` refreshes on demand. `dnd play` streams live progress (waiting / rolling), mechanical reveals, and narration over SSE — Recap work is not part of a normal Turn.
 
 Suggested first loop:
 
 1. Scout the Cave Mouth (Check).
-2. Move through the Twisting Tunnel / into the Goblin Den.
-3. Face a hazard (Save or Condition).
-4. Take a short or long rest, then inspect `state` / `log`.
+2. Move through the Twisting Tunnel into the Goblin Den (only Reachable Destinations succeed).
+3. Take the stolen goods, fight the den goblins with Checks + `resolve_enemy`, and watch Objectives / the Quest complete.
+4. Inspect `state` / `log` / `recap`, or restore later — inventory, enemies, objectives, and Recap watermark persist.
 
 ## What this POC includes
 
 - Deterministic dice, skill Checks, saving throws, Conditions, short/long rests
+- Authoritative PlayableWorld (Locations, exits, items, Enemy Groups, Objectives) with fail-closed Action Intents
 - Typed DM Tools that emit append-only Events (SQLite EventStore + Reducer Snapshots)
+- Check-gated Enemy Group damage and predicate-driven Quest completion
 - FastAPI backend + Typer/Rich CLI
 - Live Turn streaming (`progress`, `narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`)
+- Lazy Recap refresh on Session restore or explicit command
 - Multi-provider model resolution from `DND_*` settings
 
-Domain vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md). Design decisions live in [`docs/design_choices.md`](docs/design_choices.md). Original architecture reasoning and turn-flow writeup: [`docs/architecture.md`](docs/architecture.md).
+Domain vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md). Design decisions live in [`docs/design_choices.md`](docs/design_choices.md). Architecture and turn-flow writeup: [`docs/architecture.md`](docs/architecture.md).
 
 ## Current limitations
 
-- **No combat engine** — treat fights as Checks, Saves, Conditions, or retreat.
-- **No quest-completion Tool** — clearing the cave is narrative within the Scenario beats.
+- **No full combat engine** — fights use Checks plus deterministic Enemy Group HP, not initiative or action economy.
 - **No character creation / leveling** — one pregen Fighter.
 - **No multiplayer**, web UI, RAG rules lookup, or long-term campaign memory.
-- **Recap is concise, not a full transcript** — `GameState.summary` starts as the Scenario Briefing and is rewritten after each successful Turn.
+- **Recap is concise, not a full transcript** — `GameState.summary` starts as the Scenario Briefing and refreshes lazily on restore or `dnd recap` / `/recap`.
 
 ## Roadmap (out of scope for 0.1.0)
 

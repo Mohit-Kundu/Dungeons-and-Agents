@@ -11,7 +11,7 @@ from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from dnd_agent.agent.recap import RecapService
 from dnd_agent.domain.events import SummaryUpdated
-from dnd_agent.services.recap_refresh import RecapRefreshResult, RecapRefreshService
+from dnd_agent.services.recap_refresh import RecapRefreshService
 from dnd_agent.services.session_locks import SessionLockRegistry
 from dnd_agent.store.event_store import EventStore
 from dnd_agent.store.reducer import fold_events

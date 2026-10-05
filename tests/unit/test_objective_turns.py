@@ -119,7 +119,11 @@ async def test_all_predicates_complete_quest_and_replay(store: EventStore) -> No
         ),
     )
 
-    service = TurnService(store, model=_narrate_only("The den falls silent."), intent=_AlwaysGeneral())
+    service = TurnService(
+        store,
+        model=_narrate_only("The den falls silent."),
+        intent=_AlwaysGeneral(),
+    )
     result = await service.run_turn(sid, "I survey the chamber.")
 
     assert any(isinstance(e, ObjectiveCompleted) for e in result.events)

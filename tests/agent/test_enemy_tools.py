@@ -125,7 +125,9 @@ async def test_failed_check_blocks_damage(store: EventStore) -> None:
     after = await store.get_snapshot(session_id)
 
     assert result.status == "ok"
-    assert any(isinstance(event, SkillCheckResolved) and not event.success for event in result.events)
+    assert any(
+        isinstance(event, SkillCheckResolved) and not event.success for event in result.events
+    )
     assert not any(isinstance(event, EnemyGroupDamaged) for event in result.events)
     assert before is not None and after is not None
     before_hp = next(g.current_hp for g in before.world.enemy_groups if g.id == "den_goblins")

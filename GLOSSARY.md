@@ -136,7 +136,7 @@ Avoid: world lore, prompt fact.
 
 ## Action Intent
 
-The structured interpretation of a player’s natural-language action, including its action kind and referenced Playable Fact IDs. It must pass deterministic validation before DM resolution.
+The structured interpretation of a player’s natural-language action, including its action kind and referenced Playable Fact IDs. It must pass deterministic validation before DM resolution. Invalid, ambiguous, or unavailable targets become `no_progress` Turns with no Events.
 
 Avoid: Tool call (the validated intent may lead the DM Agent to call a Tool).
 

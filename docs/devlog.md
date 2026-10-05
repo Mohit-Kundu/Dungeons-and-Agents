@@ -4,6 +4,30 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-05 — Ticket 08 (authoritative-adventure-state): verify guarded adventure
+
+### Done
+
+- Added deterministic FunctionModel e2e covering reject unavailable item → travel → use ration → take goods → defeat `den_goblins` → complete all Objectives and the Quest, asserting Turn guidance each step
+- Mid-play restore reopens the SQLite EventStore and preserves inventory, surroundings, enemy HP/counts, objectives, destinations, Recap text, and `recap_through_turn`
+- Concurrent Turn + Recap under shared `SessionLockRegistry` serialize and rebuild cleanly
+- Updated README, architecture, glossary (Action Intent `no_progress`), CHANGELOG, and recorded D-029; D-019 remains superseded by D-022 without rewriting history
+- Marked issue 08 done
+
+### Broken / surprises
+
+- None in product code — travel stubs must use `destination_id` (singular); extra fields are ignored and fail closed as missing destination
+
+### Learned
+
+- Milestone acceptance belongs at the TurnService / EventStore / RecapRefreshService seams already proven by tickets 01–07; the gap was one coherent harness plus player-facing docs
+
+### Next
+
+- Authoritative-adventure-state milestone complete; pick the next effort from `.scratch/`
+
+---
+
 ## 2026-10-04 — Ticket 07 (authoritative-adventure-state): lazy Recap refresh
 
 ### Done
