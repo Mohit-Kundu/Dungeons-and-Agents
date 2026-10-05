@@ -66,7 +66,7 @@ Suggested first loop:
 - Live Turn streaming (`narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`)
 - Multi-provider model resolution from `DND_*` settings
 
-Domain vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md). Design decisions live in [`docs/design_choices.md`](docs/design_choices.md).
+Domain vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md). Design decisions live in [`docs/design_choices.md`](docs/design_choices.md). Original architecture reasoning and turn-flow writeup: [`docs/architecture.md`](docs/architecture.md).
 
 ## Current limitations
 
