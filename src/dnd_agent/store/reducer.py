@@ -33,7 +33,7 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
             location=event.location,
             quest=event.quest.model_copy(deep=True),
             rng_seed=event.rng_seed,
-            summary="",
+            summary=event.summary,
         )
 
     if state is None:

@@ -65,6 +65,10 @@ def new_session(
         hint_serve=True,
     )
     console.print(f"[green]Created Session[/green] {state.session_id}")
+    if state.summary.strip():
+        console.print()
+        console.print(state.summary.strip())
+        console.print()
     render_state(state)
 
 

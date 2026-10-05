@@ -4,6 +4,29 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 07: playable POC milestone (0.1.0)
+
+### Done
+
+- Rewrote README: install, provider config, play commands, limitations, roadmap
+- Enriched `goblin_cave` with locations/beats/notes; seed briefing into Session `summary`
+- FunctionModel playthrough covers Check → move → Condition → long rest → inspect log
+- Cut `CHANGELOG.md` `[0.1.0]`; full pytest + ruff + pyright green
+
+### Broken / surprises
+
+- Scenario `intro` existed but was unused until briefing landed on `SessionCreated.summary`
+
+### Learned
+
+- Milestone packaging is mostly README + one honest end-to-end seam test, not more rules code
+
+### Next
+
+- Combat engine / quest Tools / summary compression when the next effort starts
+
+---
+
 ## 2026-10-04 — Ticket 06: multi-provider support
 
 ### Done

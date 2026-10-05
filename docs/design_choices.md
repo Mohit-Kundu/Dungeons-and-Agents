@@ -203,3 +203,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - `resolve_model(settings)` constructing provider-specific Models — explicit; small adapter
 - **Decision:** Default `DND_MODEL=google-gla:gemini-2.5-flash`. Parse `provider:model`; build `GoogleModel` / `OpenAIChatModel` / `OllamaModel` with `DND_*` keys and optional `DND_OPENAI_BASE_URL` (Luna/proxies) or `DND_OLLAMA_BASE_URL`. Fail with `ProviderConfigError` when required creds are missing. Live smokes stay opt-in.
 - **Consequences:** TurnService defaults to `resolve_model`; pytest excludes `@pytest.mark.live` by default.
+
+### D-017: Scenario briefing seeds Session summary
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 07 needs a playable Scenario loop; `intro` was loaded but never shown to player or DM.
+- **Options considered:**
+  - Print intro only in the CLI — player sees it; agent context still empty
+  - Put intro/locations/beats into `SessionCreated.summary` — one briefing for CLI + Turn prompts
+  - New GameState fields for locations — clearer model; larger schema change for POC
+- **Decision:** Extend scenario YAML with `locations`, `beats`, and `notes`; `Scenario.briefing()` becomes `SessionCreated.summary`; CLI `new` prints it.
+- **Consequences:** Rolling summary compression (ticketed later) must preserve or replace this seed deliberately.

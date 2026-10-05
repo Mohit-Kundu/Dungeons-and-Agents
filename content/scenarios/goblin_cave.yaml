@@ -11,3 +11,17 @@ intro: |
   Damp air and torch-smoke spill from a low cave mouth in the hillside.
   Inside, distant goblin chatter echoes off wet stone. The village wants
   their stolen goods back — and the cave cleared.
+locations:
+  - name: Cave Mouth
+    description: A low rocky opening. Muddy tracks lead inward; the hillside wind covers soft sounds.
+  - name: Twisting Tunnel
+    description: A wet choke-point of stone. Stale air and trip-lines favor careful Checks and Saves.
+  - name: Goblin Den
+    description: A smoky chamber with bedrolls, stolen crates, and a war drum. Social pressure and fear matter more than a full fight.
+beats:
+  - Scout the Cave Mouth for tracks or sentries (skill Check).
+  - Move through the Twisting Tunnel; handle a hazard with a Save or Condition.
+  - Reach the Goblin Den, recover what you can, then withdraw or rest outside.
+notes: |
+  POC scope: exploration, Checks, Saves, Conditions, and rests. There is no combat engine —
+  treat threatened fights as Checks, Saves, or retreat. Completing the quest is narrative for now.

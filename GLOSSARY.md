@@ -94,9 +94,15 @@ Avoid: context (that is prompt material), memory (that is recent turns plus summ
 
 ## Scenario
 
-A predefined starting setup (location, quest, linked character id, intro text) loaded from `content/scenarios/`.
+A predefined starting setup (location, quest, linked character id, intro text, optional locations/beats) loaded from `content/scenarios/`.
 
 Avoid: adventure module (unless referring to published D&D products), campaign.
+
+## Briefing
+
+The Scenario text seeded into `GameState.summary` at Session creation (intro, known locations, suggested beats, POC notes). Shown by `dnd new` and included in Turn context.
+
+Avoid: prologue (prefer Briefing), system prompt dump.
 
 ## Character
 

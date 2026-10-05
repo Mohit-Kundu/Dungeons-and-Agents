@@ -6,7 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from dnd_agent.domain.models import Character, Quest
 
@@ -17,6 +17,11 @@ def content_root() -> Path:
     return Path(__file__).resolve().parents[3] / "content"
 
 
+class ScenarioLocation(BaseModel):
+    name: str
+    description: str = ""
+
+
 class Scenario(BaseModel):
     id: str
     title: str
@@ -24,6 +29,29 @@ class Scenario(BaseModel):
     character_id: str
     quest: Quest
     intro: str = ""
+    locations: list[ScenarioLocation] = Field(default_factory=list)
+    beats: list[str] = Field(default_factory=list)
+    notes: str = ""
+
+    def briefing(self) -> str:
+        """Text seeded into GameState.summary for the DM Agent."""
+        parts: list[str] = []
+        if self.intro.strip():
+            parts.append(self.intro.strip())
+        if self.locations:
+            lines = ["Known locations:"]
+            for location in self.locations:
+                detail = f" — {location.description}" if location.description else ""
+                lines.append(f"- {location.name}{detail}")
+            parts.append("\n".join(lines))
+        if self.beats:
+            lines = ["Suggested beats:"]
+            for index, beat in enumerate(self.beats, start=1):
+                lines.append(f"{index}. {beat}")
+            parts.append("\n".join(lines))
+        if self.notes.strip():
+            parts.append(self.notes.strip())
+        return "\n\n".join(parts)
 
 
 @lru_cache(maxsize=32)

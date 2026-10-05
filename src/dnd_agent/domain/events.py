@@ -17,6 +17,7 @@ class SessionCreated(BaseModel):
     location: str
     quest: Quest
     rng_seed: int
+    summary: str = ""
 
 
 class DiceRolled(BaseModel):

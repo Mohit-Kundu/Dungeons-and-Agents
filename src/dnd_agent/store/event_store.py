@@ -88,6 +88,7 @@ class EventStore:
             location=scenario.starting_location,
             quest=scenario.quest,
             rng_seed=seed,
+            summary=scenario.briefing(),
         )
         state = apply_event(None, event)
         now = datetime.now(UTC).isoformat()

@@ -4,11 +4,15 @@
 
 **Blocked by:** 04, 05, 06
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Installation and run instructions are complete
-- [ ] The predefined scenario is playable from start to finish within the POC scope
-- [ ] Changelog and development log describe the milestone
-- [ ] Design choices and glossary reflect the implemented system
-- [ ] The full test, lint, and type-check suite passes
-- [ ] Out-of-scope roadmap items are clearly documented
+## Comments
+
+- Seams: README install/play/limitations, FunctionModel playthrough test, scenario beats, CHANGELOG 0.1.0 + green gate.
+
+- [x] Installation and run instructions are complete
+- [x] The predefined scenario is playable from start to finish within the POC scope
+- [x] Changelog and development log describe the milestone
+- [x] Design choices and glossary reflect the implemented system
+- [x] The full test, lint, and type-check suite passes
+- [x] Out-of-scope roadmap items are clearly documented
