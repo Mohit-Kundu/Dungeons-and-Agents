@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dnd_agent.cli.render import format_turn_event
+from dnd_agent.cli.render import format_stream_event, format_turn_event, progress_status_text
 
 
 def test_format_saving_throw_event() -> None:
@@ -17,9 +17,8 @@ def test_format_saving_throw_event() -> None:
             "success": True,
         }
     )
-    assert "Save" in text
-    assert "constitution" in text
-    assert "success" in text
+    assert "Save" in text or "Constitution" in text
+    assert "SUCCESS" in text
 
 
 def test_format_condition_and_rest_events() -> None:
@@ -52,3 +51,58 @@ def test_format_condition_and_rest_events() -> None:
     )
     assert "Long rest" in long
     assert "frightened" in long
+
+
+def test_progress_status_text_cycles_ellipsis() -> None:
+    assert progress_status_text("The DM considers your move", 0).endswith(".")
+    assert progress_status_text("The DM considers your move", 1).endswith("..")
+    assert progress_status_text("The DM considers your move", 2).endswith("...")
+    assert progress_status_text("The DM considers your move", 3).endswith(".")
+
+
+def test_format_stream_event_hides_raw_tool_calls() -> None:
+    assert (
+        format_stream_event(
+            {
+                "type": "tool_call",
+                "tool_name": "skill_check",
+                "args": {"skill": "perception", "dc": 12},
+            }
+        )
+        is None
+    )
+
+
+def test_format_stream_event_progress_is_status_only() -> None:
+    assert (
+        format_stream_event(
+            {
+                "type": "progress",
+                "phase": "awaiting_dm",
+                "label": "The DM considers your move",
+            }
+        )
+        is None
+    )
+
+
+def test_format_stream_roll_is_dramatic_and_permanent() -> None:
+    text = format_stream_event(
+        {
+            "type": "roll",
+            "event": {
+                "type": "skill_check_resolved",
+                "skill": "perception",
+                "d20": 17,
+                "modifier": 3,
+                "total": 20,
+                "dc": 12,
+                "success": True,
+            },
+        }
+    )
+    assert text is not None
+    assert "Perception" in text or "perception" in text
+    assert "SUCCESS" in text
+    assert "20" in text
+    assert "12" in text

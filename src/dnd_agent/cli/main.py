@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from typing import Any, Protocol
 
 import httpx
 import typer
@@ -10,9 +11,22 @@ import uvicorn
 
 from dnd_agent.api.app import create_app
 from dnd_agent.cli.client import ApiClient, ApiError
-from dnd_agent.cli.render import console, format_stream_event, render_state
+from dnd_agent.cli.render import (
+    TurnProgressDisplay,
+    console,
+    format_stream_event,
+    render_state,
+)
 from dnd_agent.config import get_settings
 from dnd_agent.domain.models import GameState
+
+
+class ProgressDisplay(Protocol):
+    def show(self, label: str) -> None: ...
+
+    def pulse(self) -> None: ...
+
+    def clear(self) -> None: ...
 
 app = typer.Typer(
     name="dnd",
@@ -38,6 +52,59 @@ def _with_api[T](action: Callable[[ApiClient], T], *, hint_serve: bool = False) 
         if hint_serve:
             console.print("Start the server with: [bold]dnd serve[/bold]")
         raise typer.Exit(code=1) from exc
+
+
+def consume_turn_stream(
+    events: Iterator[dict[str, Any]],
+    *,
+    progress: ProgressDisplay | None = None,
+) -> GameState | None:
+    """Render a live Turn stream with animated waits and permanent reveals."""
+    display: ProgressDisplay = progress or TurnProgressDisplay()
+    final_state: GameState | None = None
+    narration_started = False
+    try:
+        display.show("The DM considers your move")
+        for event in events:
+            event_type = event.get("type")
+            if event_type == "progress":
+                label = str(event.get("label") or "The DM considers your move")
+                display.show(label)
+                continue
+            if event_type == "tool_call":
+                # Progress events carry the player-facing copy; keep the spinner alive.
+                display.pulse()
+                continue
+            if event_type == "narration_delta":
+                text = str(event.get("text", ""))
+                if not narration_started:
+                    display.clear()
+                    narration_started = True
+                    console.print()
+                console.print(text, end="")
+                continue
+
+            display.clear()
+            if narration_started:
+                console.print()
+                narration_started = False
+            line = format_stream_event(event)
+            if line:
+                console.print(line)
+                if event_type == "roll":
+                    console.print()
+            if event_type == "done":
+                final_state = GameState.model_validate(event["state"])
+            elif event_type == "error":
+                continue
+            else:
+                # Resume anticipation until the next reveal or narration.
+                display.show("The DM weaves the outcome")
+        if narration_started:
+            console.print()
+    finally:
+        display.clear()
+    return final_state
 
 
 @app.command("serve")
@@ -95,27 +162,7 @@ def play_turn(
     """Play one Turn: stream narration and mechanical Events over SSE."""
 
     def _consume(client: ApiClient) -> GameState | None:
-        final_state: GameState | None = None
-        narration_started = False
-        for event in client.play_turn(session_id, action):
-            event_type = event.get("type")
-            if event_type == "narration_delta":
-                text = str(event.get("text", ""))
-                if not narration_started:
-                    narration_started = True
-                console.print(text, end="")
-            else:
-                if narration_started and event_type != "narration_delta":
-                    console.print()
-                    narration_started = False
-                line = format_stream_event(event)
-                if line:
-                    console.print(line)
-            if event_type == "done":
-                final_state = GameState.model_validate(event["state"])
-        if narration_started:
-            console.print()
-        return final_state
+        return consume_turn_stream(client.play_turn(session_id, action))
 
     state = _with_api(_consume, hint_serve=True)
     if state is not None:

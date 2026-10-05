@@ -32,12 +32,26 @@ from dnd_agent.services.stream_events import (
     DoneEvent,
     ErrorEvent,
     NarrationDelta,
+    ProgressEvent,
     RollEvent,
     StateChangedEvent,
     ToolCallEvent,
     TurnStreamEvent,
 )
 from dnd_agent.store.event_store import EventStore
+
+ROLLING_TOOLS = frozenset({"skill_check", "saving_throw", "roll_dice", "short_rest"})
+
+_AWAITING_OPENERS = (
+    "The DM considers your move",
+    "Torchlight flickers across the screen",
+    "Something stirs behind the DM's screen",
+)
+_AWAITING_AFTER_ROLL = (
+    "The DM weaves the outcome",
+    "The dice have spoken — the story turns",
+    "The world holds its breath",
+)
 
 
 @dataclass(frozen=True)
@@ -76,6 +90,30 @@ def _tool_args(raw: Any) -> dict[str, Any]:
         if isinstance(parsed, dict):
             return parsed
     return {"value": raw}
+
+
+def _rolling_label(tool_name: str, args: dict[str, Any]) -> str:
+    reason = str(args.get("reason") or "").strip()
+    if tool_name == "skill_check":
+        skill = str(args.get("skill") or "unknown")
+        dc = args.get("dc")
+        base = f"Dice tumble for {skill}"
+        if dc is not None:
+            base = f"{base} (DC {dc})"
+        return f"{base}..." if not reason else f"{base}: {reason}..."
+    if tool_name == "saving_throw":
+        ability = str(args.get("ability") or "unknown")
+        dc = args.get("dc")
+        base = f"Fate hangs on a {ability} save"
+        if dc is not None:
+            base = f"{base} (DC {dc})"
+        return f"{base}..." if not reason else f"{base}: {reason}..."
+    if tool_name == "roll_dice":
+        expression = str(args.get("expression") or "dice")
+        return f"Dice clatter — rolling {expression}..."
+    if tool_name == "short_rest":
+        return "Hit dice rattle as you settle into a short rest..."
+    return "Dice tumble across the table..."
 
 
 def _domain_stream_events(event: Event) -> list[TurnStreamEvent]:
@@ -139,6 +177,12 @@ class TurnService:
         status = "ok"
         narration_parts: list[str] = []
         emitted_domain = 0
+        await_tick = 0
+
+        yield ProgressEvent(
+            phase="awaiting_dm",
+            label=_AWAITING_OPENERS[0],
+        )
 
         try:
             async with self._agent.run_stream_events(
@@ -151,16 +195,39 @@ class TurnService:
             ) as run:
                 async for agent_event in run:
                     if isinstance(agent_event, FunctionToolCallEvent):
-                        yield ToolCallEvent(
-                            tool_name=agent_event.part.tool_name,
-                            args=_tool_args(agent_event.part.args),
-                        )
+                        args = _tool_args(agent_event.part.args)
+                        tool_name = agent_event.part.tool_name
+                        if tool_name in ROLLING_TOOLS:
+                            yield ProgressEvent(
+                                phase="rolling",
+                                label=_rolling_label(tool_name, args),
+                            )
+                        else:
+                            await_tick += 1
+                            yield ProgressEvent(
+                                phase="awaiting_dm",
+                                label=_AWAITING_OPENERS[
+                                    await_tick % len(_AWAITING_OPENERS)
+                                ],
+                            )
+                        yield ToolCallEvent(tool_name=tool_name, args=args)
                     elif isinstance(agent_event, FunctionToolResultEvent):
                         new_events = deps.events_this_turn[emitted_domain:]
                         emitted_domain = len(deps.events_this_turn)
+                        emitted_roll = False
                         for domain_event in new_events:
                             for stream_event in _domain_stream_events(domain_event):
+                                if isinstance(stream_event, RollEvent):
+                                    emitted_roll = True
                                 yield stream_event
+                        if emitted_roll and not narration_parts:
+                            await_tick += 1
+                            yield ProgressEvent(
+                                phase="awaiting_dm",
+                                label=_AWAITING_AFTER_ROLL[
+                                    await_tick % len(_AWAITING_AFTER_ROLL)
+                                ],
+                            )
                     elif isinstance(agent_event, PartStartEvent) and isinstance(
                         agent_event.part, TextPart
                     ):

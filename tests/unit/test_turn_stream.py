@@ -16,6 +16,7 @@ from dnd_agent.services.stream_events import (
     DoneEvent,
     ErrorEvent,
     NarrationDelta,
+    ProgressEvent,
     RollEvent,
     ToolCallEvent,
 )
@@ -83,6 +84,44 @@ async def test_stream_turn_emits_tool_roll_narration_and_done(store: EventStore)
     assert done.status == "ok"
     assert done.turn_number == 1
     assert done.state.session_id == state.session_id
+
+
+async def test_stream_turn_emits_progress_phases_around_check(store: EventStore) -> None:
+    state = await store.create_session(scenario_id="goblin_cave", rng_seed=42)
+    service = TurnService(store, model=_streaming_skill_check_model())
+
+    events = [event async for event in service.stream_turn(state.session_id, "I search.")]
+    types = [type(event) for event in events]
+
+    assert types[0] is ProgressEvent
+    assert isinstance(events[0], ProgressEvent)
+    assert events[0].phase == "awaiting_dm"
+
+    progress = [event for event in events if isinstance(event, ProgressEvent)]
+    phases = [event.phase for event in progress]
+    assert "rolling" in phases
+    assert phases.count("awaiting_dm") >= 2
+
+    first_roll = next(i for i, event in enumerate(events) if isinstance(event, RollEvent))
+    first_narration = next(
+        i for i, event in enumerate(events) if isinstance(event, NarrationDelta)
+    )
+    rolling_idx = next(
+        i
+        for i, event in enumerate(events)
+        if isinstance(event, ProgressEvent) and event.phase == "rolling"
+    )
+    post_roll_await = next(
+        i
+        for i, event in enumerate(events)
+        if isinstance(event, ProgressEvent)
+        and event.phase == "awaiting_dm"
+        and i > first_roll
+    )
+    assert rolling_idx < first_roll < post_roll_await < first_narration
+    rolling = events[rolling_idx]
+    assert isinstance(rolling, ProgressEvent)
+    assert "perception" in rolling.label.lower()
 
 
 async def test_session_lock_serializes_concurrent_turns(store: EventStore) -> None:

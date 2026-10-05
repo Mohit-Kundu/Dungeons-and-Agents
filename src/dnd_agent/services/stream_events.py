@@ -33,6 +33,14 @@ class NarrationDelta(BaseModel):
     text: str
 
 
+class ProgressEvent(BaseModel):
+    """Player-facing Turn phase for live CLI anticipation (D-018)."""
+
+    type: Literal["progress"] = "progress"
+    phase: Literal["awaiting_dm", "rolling"]
+    label: str
+
+
 class ToolCallEvent(BaseModel):
     type: Literal["tool_call"] = "tool_call"
     tool_name: str
@@ -63,6 +71,12 @@ class DoneEvent(BaseModel):
 
 
 TurnStreamEvent = Annotated[
-    NarrationDelta | ToolCallEvent | RollEvent | StateChangedEvent | ErrorEvent | DoneEvent,
+    NarrationDelta
+    | ProgressEvent
+    | ToolCallEvent
+    | RollEvent
+    | StateChangedEvent
+    | ErrorEvent
+    | DoneEvent,
     Field(discriminator="type"),
 ]

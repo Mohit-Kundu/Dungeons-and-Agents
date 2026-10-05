@@ -80,6 +80,12 @@ async def test_play_turn_streams_sse_contract(client: AsyncClient) -> None:
     assert "text/event-stream" in response.headers["content-type"]
     events = _parse_sse(response.text)
     types = [event["type"] for event in events]
+    assert types[0] == "progress"
+    assert events[0]["phase"] == "awaiting_dm"
+    assert "progress" in types
+    assert any(
+        event["type"] == "progress" and event.get("phase") == "rolling" for event in events
+    )
     assert "tool_call" in types
     assert "roll" in types
     assert "narration_delta" in types

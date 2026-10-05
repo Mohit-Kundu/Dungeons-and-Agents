@@ -49,7 +49,7 @@ uv run dnd state <session_id>
 uv run dnd log <session_id>
 ```
 
-`dnd new` creates a Session of **Goblin Cave** with Brynn Ironfoot, prints the Briefing, and shows the Snapshot. `dnd play` streams narration and mechanical Events over SSE.
+`dnd new` creates a Session of **Goblin Cave** with Brynn Ironfoot, prints the Briefing, and shows the Snapshot. `dnd play` streams live progress (waiting / rolling), mechanical reveals, and narration over SSE.
 
 Suggested first loop:
 
@@ -63,7 +63,7 @@ Suggested first loop:
 - Deterministic dice, skill Checks, saving throws, Conditions, short/long rests
 - Typed DM Tools that emit append-only Events (SQLite EventStore + Reducer Snapshots)
 - FastAPI backend + Typer/Rich CLI
-- Live Turn streaming (`narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`)
+- Live Turn streaming (`progress`, `narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`)
 - Multi-provider model resolution from `DND_*` settings
 
 Domain vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md). Design decisions live in [`docs/design_choices.md`](docs/design_choices.md). Original architecture reasoning and turn-flow writeup: [`docs/architecture.md`](docs/architecture.md).

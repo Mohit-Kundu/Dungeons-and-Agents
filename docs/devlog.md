@@ -4,6 +4,29 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 01 (turn-feedback-recaps): live Turn progress
+
+### Done
+
+- Added `progress` SSE events (`awaiting_dm`, `rolling`) with anticipation-focused labels
+- CLI `dnd play` shows animated waits, hides raw tool dumps, and reveals Checks/Saves dramatically
+- Tests cover TurnService phase order, CLI consume/render, and API SSE contract
+- Recorded D-018
+
+### Broken / surprises
+
+- Rich `Status` must be cleared before streamed narration or it corrupts the line; extracted `consume_turn_stream` to own that lifecycle
+
+### Learned
+
+- Progress belongs in the SSE contract, not only the CLI — labels need skill/DC context from the server
+
+### Next
+
+- Ticket 02: persist LLM Session recaps and show them on `state` / before `play`
+
+---
+
 ## 2026-10-04 — Ticket 07: playable POC milestone (0.1.0)
 
 ### Done

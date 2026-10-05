@@ -215,3 +215,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - New GameState fields for locations — clearer model; larger schema change for POC
 - **Decision:** Extend scenario YAML with `locations`, `beats`, and `notes`; `Scenario.briefing()` becomes `SessionCreated.summary`; CLI `new` prints it.
 - **Consequences:** Rolling summary compression (ticketed later) must preserve or replace this seed deliberately.
+
+### D-018: Live Turn progress phases for anticipation
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** LLM latency between player input and narration feels empty; players need to see dice and waiting without raw tool dumps.
+- **Options considered:**
+  - CLI-only spinner guessing from existing `tool_call` / `roll` events — no server contract; weak copy
+  - New `progress` SSE events with `awaiting_dm` / `rolling` phases plus player-facing labels — shared contract; CLI animates waits
+  - Always print raw tool args — transparent; breaks immersion
+- **Decision:** Emit `progress` at Turn start, before rolling Tools, and after roll reveals while awaiting narration. CLI hides raw `tool_call` lines, animates waits with cycling ellipsis, and prints permanent dramatic Check/Save/roll outcomes.
+- **Consequences:** SSE contract includes `progress`; clients should clear status UI before `narration_delta` / `error` / `done`.

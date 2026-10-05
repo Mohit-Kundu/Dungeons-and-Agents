@@ -1,4 +1,4 @@
-"""Rich rendering helpers for Session state."""
+"""Rich rendering helpers for Session state and live Turn progress."""
 
 from __future__ import annotations
 
@@ -6,20 +6,25 @@ from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.status import Status
 from rich.table import Table
 
 from dnd_agent.domain.models import GameState
 
 console = Console()
 
+def progress_status_text(label: str, tick: int) -> str:
+    """Cycle trailing ellipsis so waits feel alive."""
+    dots = "." * ((tick % 3) + 1)
+    base = label.rstrip(".").rstrip()
+    return f"{base}{dots}"
+
 
 def format_stream_event(event: dict[str, Any]) -> str | None:
-    """Format one SSE Turn stream payload. Returns None for narration (printed raw)."""
+    """Format one SSE Turn stream payload. Returns None for status-only / narration."""
     event_type = event.get("type")
-    if event_type == "narration_delta":
+    if event_type in {"narration_delta", "progress", "tool_call"}:
         return None
-    if event_type == "tool_call":
-        return f"[cyan]Tool[/cyan] {event.get('tool_name')} {event.get('args')}"
     if event_type == "roll":
         inner = event.get("event") or {}
         return format_turn_event(inner if isinstance(inner, dict) else {})
@@ -37,18 +42,24 @@ def format_turn_event(event: dict[str, Any]) -> str:
     """Format one domain Event dict for CLI display."""
     event_type = event.get("type")
     if event_type == "skill_check_resolved":
-        outcome = "success" if event.get("success") else "failure"
+        skill = str(event.get("skill") or "check").replace("_", " ").title()
+        outcome = "SUCCESS" if event.get("success") else "FAILURE"
+        tone = "bold green" if event.get("success") else "bold red"
         return (
-            f"[yellow]Check[/yellow] {event.get('skill')} "
-            f"d20={event.get('d20')} mod={event.get('modifier')} "
-            f"total={event.get('total')} vs DC {event.get('dc')} → {outcome}"
+            f"[bold yellow]◆ {skill} check[/bold yellow]\n"
+            f"  d20 {event.get('d20')} + {event.get('modifier')} "
+            f"= [bold]{event.get('total')}[/bold]  vs  DC {event.get('dc')}\n"
+            f"  [{tone}]{outcome}[/{tone}]"
         )
     if event_type == "saving_throw_resolved":
-        outcome = "success" if event.get("success") else "failure"
+        ability = str(event.get("ability") or "ability").replace("_", " ").title()
+        outcome = "SUCCESS" if event.get("success") else "FAILURE"
+        tone = "bold green" if event.get("success") else "bold red"
         return (
-            f"[yellow]Save[/yellow] {event.get('ability')} "
-            f"d20={event.get('d20')} mod={event.get('modifier')} "
-            f"total={event.get('total')} vs DC {event.get('dc')} → {outcome}"
+            f"[bold yellow]◆ {ability} save[/bold yellow]\n"
+            f"  d20 {event.get('d20')} + {event.get('modifier')} "
+            f"= [bold]{event.get('total')}[/bold]  vs  DC {event.get('dc')}\n"
+            f"  [{tone}]{outcome}[/{tone}]"
         )
     if event_type == "condition_added":
         return f"[yellow]Condition[/yellow] +{event.get('condition')} ({event.get('reason')})"
@@ -56,26 +67,65 @@ def format_turn_event(event: dict[str, Any]) -> str:
         return f"[yellow]Condition[/yellow] -{event.get('condition')} ({event.get('reason')})"
     if event_type == "short_rest_completed":
         return (
-            f"[yellow]Short rest[/yellow] spent {event.get('hit_dice_spent')} hit dice "
-            f"rolls={event.get('hit_dice_rolls')} recovered {event.get('hp_recovered')} HP "
-            f"→ {event.get('hp_after')} HP, {event.get('hit_dice_remaining')} hit dice left"
+            f"[bold yellow]◆ Short rest[/bold yellow]\n"
+            f"  spent {event.get('hit_dice_spent')} hit dice "
+            f"rolls={event.get('hit_dice_rolls')} recovered {event.get('hp_recovered')} HP\n"
+            f"  → {event.get('hp_after')} HP, {event.get('hit_dice_remaining')} hit dice left"
         )
     if event_type == "long_rest_completed":
         cleared = event.get("conditions_cleared") or []
         cleared_text = ", ".join(cleared) if cleared else "none"
         return (
-            f"[yellow]Long rest[/yellow] HP→{event.get('hp_after')} "
-            f"restored {event.get('hit_dice_restored')} hit dice "
-            f"({event.get('hit_dice_remaining')} left); cleared [{cleared_text}]"
+            f"[bold yellow]◆ Long rest[/bold yellow]\n"
+            f"  HP→{event.get('hp_after')}; restored {event.get('hit_dice_restored')} hit dice "
+            f"({event.get('hit_dice_remaining')} left)\n"
+            f"  cleared [{cleared_text}]"
         )
     if event_type == "dice_rolled":
+        reason = event.get("reason") or "fortune"
         return (
-            f"[yellow]Roll[/yellow] {event.get('expression')} = {event.get('total')} "
-            f"({event.get('reason')})"
+            f"[bold yellow]◆ Dice[/bold yellow] {event.get('expression')} "
+            f"= [bold]{event.get('total')}[/bold]  ({reason})"
         )
     if event_type == "location_changed":
         return f"[yellow]Location[/yellow] → {event.get('location')}"
     return f"[yellow]Event[/yellow] {event_type}"
+
+
+class TurnProgressDisplay:
+    """Animated wait indicator that clears cleanly before permanent output."""
+
+    def __init__(self, target: Console | None = None) -> None:
+        self._console = target or console
+        self._status: Status | None = None
+        self._label = "The DM considers your move"
+        self._tick = 0
+
+    def show(self, label: str) -> None:
+        self._label = label.rstrip(".").rstrip() or "The DM considers your move"
+        text = progress_status_text(self._label, self._tick)
+        if self._status is None:
+            self._status = self._console.status(
+                f"[dim italic]{text}[/dim italic]",
+                spinner="dots",
+            )
+            self._status.start()
+        else:
+            self._status.update(f"[dim italic]{text}[/dim italic]")
+
+    def pulse(self) -> None:
+        """Advance ellipsis while still waiting on the same phase."""
+        if self._status is None:
+            return
+        self._tick += 1
+        self._status.update(
+            f"[dim italic]{progress_status_text(self._label, self._tick)}[/dim italic]"
+        )
+
+    def clear(self) -> None:
+        if self._status is not None:
+            self._status.stop()
+            self._status = None
 
 
 def render_state(state: GameState) -> None:

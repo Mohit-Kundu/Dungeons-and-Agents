@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Live Turn `progress` SSE phases (`awaiting_dm`, `rolling`) with player-facing labels
+- CLI animated wait indicator (cycling ellipsis) and dramatic Check/Save/roll reveals during `dnd play`
+
 ### Changed
 
 ### Fixed
