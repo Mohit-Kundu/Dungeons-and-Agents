@@ -4,6 +4,30 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 06 (authoritative-adventure-state): complete objectives and Quests
+
+### Done
+
+- Pure predicate evaluation for location-visited, inventory-contains, and enemies-defeated
+- `ObjectiveCompleted` / `QuestCompleted` Events applied by the Reducer; TurnService emits them once after mutations
+- TurnResult / SSE `done` / DM context / CLI expose incomplete Objectives, Enemy Group HP/counts, and Reachable Destinations
+- Recorded D-027; tests cover partial progress, each predicate, final Quest completion, replay, API, and CLI
+
+### Broken / surprises
+
+- Completing all three Goblin Cave Objectives in one Turn batches Objective Events then Quest completion from a single plan against the pre-completion Snapshot
+
+### Learned
+
+- Keep completion Events in the log (not view-only status) so restore/replay preserves when the Quest finished
+
+### Next
+
+- Ticket 07: refresh Recaps only on restore or command
+- Ticket 08: verify guarded adventure end-to-end
+
+---
+
 ## 2026-10-04 — Ticket 05 (authoritative-adventure-state): deterministic enemy damage
 
 ### Done

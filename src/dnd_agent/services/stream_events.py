@@ -7,6 +7,8 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, Field
 
 from dnd_agent.domain.models import GameState
+from dnd_agent.world.enemies import EnemyStatus
+from dnd_agent.world.objectives import IncompleteObjective
 from dnd_agent.world.travel import ReachableDestination
 
 ROLL_EVENT_TYPES = frozenset(
@@ -28,6 +30,8 @@ STATE_EVENT_TYPES = frozenset(
         "item_taken",
         "item_consumed",
         "enemy_group_damaged",
+        "objective_completed",
+        "quest_completed",
     }
 )
 
@@ -73,6 +77,8 @@ class DoneEvent(BaseModel):
     state: GameState
     narration: str = ""
     reachable: list[ReachableDestination] = Field(default_factory=list)
+    incomplete_objectives: list[IncompleteObjective] = Field(default_factory=list)
+    enemies: list[EnemyStatus] = Field(default_factory=list)
 
 
 TurnStreamEvent = Annotated[

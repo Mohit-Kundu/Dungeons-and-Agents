@@ -11,6 +11,8 @@ from rich.table import Table
 
 from dnd_agent.api.schemas import LatestTurn, SessionOverviewResponse
 from dnd_agent.domain.models import GameState
+from dnd_agent.world.enemies import EnemyStatus, enemy_statuses
+from dnd_agent.world.objectives import IncompleteObjective, incomplete_objectives
 from dnd_agent.world.travel import ReachableDestination, reachable_destinations
 
 console = Console()
@@ -55,6 +57,45 @@ def format_reachable_destinations(
             dest_id = str(destination.get("id") or "?")
             lines.append(f"{name} [{dest_id}]")
     return ", ".join(lines)
+
+
+def format_incomplete_objectives(
+    objectives: list[IncompleteObjective] | list[dict[str, Any]],
+) -> str:
+    if not objectives:
+        return "(none)"
+    lines: list[str] = []
+    for item in objectives:
+        if isinstance(item, IncompleteObjective):
+            lines.append(f"{item.title} [{item.id}]")
+        else:
+            title = str(item.get("title") or item.get("id") or "?")
+            obj_id = str(item.get("id") or "?")
+            lines.append(f"{title} [{obj_id}]")
+    return ", ".join(lines)
+
+
+def format_enemy_statuses(
+    statuses: list[EnemyStatus] | list[dict[str, Any]],
+) -> str:
+    if not statuses:
+        return "(none)"
+    lines: list[str] = []
+    for status in statuses:
+        if isinstance(status, EnemyStatus):
+            lines.append(
+                f"{status.name} [{status.id}] "
+                f"HP {status.current_hp}/{status.max_hp} "
+                f"({status.remaining_count} left)"
+            )
+        else:
+            name = str(status.get("name") or status.get("id") or "?")
+            enemy_id = str(status.get("id") or "?")
+            current = status.get("current_hp")
+            max_hp = status.get("max_hp")
+            remaining = status.get("remaining_count")
+            lines.append(f"{name} [{enemy_id}] HP {current}/{max_hp} ({remaining} left)")
+    return "; ".join(lines)
 
 
 def format_turn_event(event: dict[str, Any]) -> str:
@@ -113,6 +154,12 @@ def format_turn_event(event: dict[str, Any]) -> str:
             f"[yellow]Enemy[/yellow] {event.get('enemy_group_id')} "
             f"-{event.get('damage')} HP → {event.get('current_hp')}"
         )
+    if event_type == "objective_completed":
+        title = event.get("title") or event.get("objective_id")
+        return f"[green]Objective[/green] complete: {title}"
+    if event_type == "quest_completed":
+        title = event.get("title") or event.get("quest_id")
+        return f"[bold green]Quest[/bold green] complete: {title}"
     return f"[yellow]Event[/yellow] {event_type}"
 
 
@@ -186,6 +233,11 @@ def render_state(state: GameState) -> None:
         "Reachable",
         format_reachable_destinations(reachable_destinations(state)),
     )
+    sheet.add_row(
+        "Objectives",
+        format_incomplete_objectives(incomplete_objectives(state)),
+    )
+    sheet.add_row("Enemies", format_enemy_statuses(enemy_statuses(state)))
     sheet.add_row("Quest", f"{state.quest.title} [{state.quest.status}]")
     sheet.add_row(
         "Character",

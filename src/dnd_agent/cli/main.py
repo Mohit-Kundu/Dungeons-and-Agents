@@ -14,6 +14,8 @@ from dnd_agent.cli.client import ApiClient, ApiError
 from dnd_agent.cli.render import (
     TurnProgressDisplay,
     console,
+    format_enemy_statuses,
+    format_incomplete_objectives,
     format_reachable_destinations,
     format_stream_event,
     render_overview,
@@ -103,7 +105,13 @@ def consume_turn_stream(
                     console.print(
                         f"[cyan]Reachable[/cyan] {format_reachable_destinations(reachable)}"
                     )
-                elif event.get("status") == "no_progress":
+                objectives = event.get("incomplete_objectives") or []
+                console.print(
+                    f"[cyan]Objectives[/cyan] {format_incomplete_objectives(objectives)}"
+                )
+                enemies = event.get("enemies") or []
+                console.print(f"[cyan]Enemies[/cyan] {format_enemy_statuses(enemies)}")
+                if event.get("status") == "no_progress":
                     narration = str(event.get("narration") or "").strip()
                     if narration and not narration_started:
                         console.print(narration)

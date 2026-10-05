@@ -40,6 +40,7 @@ from dnd_agent.services.stream_events import (
     TurnStreamEvent,
 )
 from dnd_agent.store.event_store import EventStore
+from dnd_agent.world.enemies import EnemyStatus, enemy_statuses, format_enemy_status_lines
 from dnd_agent.world.intent import (
     CodeIntentService,
     IntentProposer,
@@ -47,6 +48,12 @@ from dnd_agent.world.intent import (
     format_validated_intent,
     rejected_intent_narration,
     validate_action_intent,
+)
+from dnd_agent.world.objectives import (
+    IncompleteObjective,
+    format_incomplete_objective_lines,
+    incomplete_objectives,
+    plan_progress_events,
 )
 from dnd_agent.world.travel import (
     ReachableDestination,
@@ -78,6 +85,20 @@ class TurnResult:
     events: list[Event]
     status: str
     reachable: list[ReachableDestination]
+    incomplete_objectives: list[IncompleteObjective]
+    enemies: list[EnemyStatus]
+
+
+def _turn_guidance(state: GameState) -> tuple[
+    list[ReachableDestination],
+    list[IncompleteObjective],
+    list[EnemyStatus],
+]:
+    return (
+        reachable_destinations(state),
+        incomplete_objectives(state),
+        enemy_statuses(state),
+    )
 
 
 def _format_context(state: GameState, recent_turns: list[dict]) -> str:
@@ -87,9 +108,13 @@ def _format_context(state: GameState, recent_turns: list[dict]) -> str:
         history_lines.append(f"DM: {turn['narration']}")
     history = "\n".join(history_lines) if history_lines else "(no prior turns)"
     destinations = format_reachable_lines(reachable_destinations(state))
+    objectives = format_incomplete_objective_lines(incomplete_objectives(state))
+    enemies = format_enemy_status_lines(enemy_statuses(state))
     return (
         f"Current GameState JSON:\n{state.model_dump_json(indent=2)}\n\n"
         f"Reachable destinations:\n{destinations}\n\n"
+        f"Incomplete objectives:\n{objectives}\n\n"
+        f"Enemy groups:\n{enemies}\n\n"
         f"Recent turns:\n{history}\n\n"
         f"Rolling summary:\n{state.summary or '(empty)'}"
     )
@@ -108,7 +133,9 @@ def _format_turn_prompt(
         f"Player action:\n{player_text}\n\n"
         "Resolve the action using only the validated Action Intent ids. "
         "Call tools for any Check or roll before narrating the outcome. "
-        "Use move_to only with a reachable destination id from the list above."
+        "Use move_to only with a reachable destination id from the list above. "
+        "Nudge the player toward incomplete objectives and reachable destinations "
+        "when fictionally appropriate."
     )
 
 
@@ -213,15 +240,21 @@ class TurnService:
             narration=narration,
             status="no_progress",
         )
+        progress_events = await self._apply_progress(session_id)
+        fresh = await self._store.get_snapshot(session_id)
+        assert fresh is not None
+        reachable, objectives, enemies = _turn_guidance(fresh)
         return None, TurnResult(
             session_id=session_id,
             turn_number=turn_number,
             player_text=text,
             narration=narration,
-            state=state,
-            events=[],
+            state=fresh,
+            events=list(progress_events),
             status="no_progress",
-            reachable=destinations,
+            reachable=reachable,
+            incomplete_objectives=objectives,
+            enemies=enemies,
         )
 
     async def _stream_turn_locked(
@@ -239,6 +272,8 @@ class TurnService:
                 state=rejected.state,
                 narration=rejected.narration,
                 reachable=list(rejected.reachable),
+                incomplete_objectives=list(rejected.incomplete_objectives),
+                enemies=list(rejected.enemies),
             )
             return
         assert validated is not None
@@ -336,6 +371,11 @@ class TurnService:
             narration=narration,
             status=status,
         )
+        progress_events = await self._apply_progress(session_id)
+        for domain_event in progress_events:
+            deps.events_this_turn.append(domain_event)
+            for stream_event in _domain_stream_events(domain_event):
+                yield stream_event
         async for progress in self._maybe_update_recap(
             session_id,
             player_text=text,
@@ -346,12 +386,15 @@ class TurnService:
             yield progress
         fresh_state = await self._store.get_snapshot(session_id)
         assert fresh_state is not None
+        reachable, objectives, enemies = _turn_guidance(fresh_state)
         yield DoneEvent(
             turn_number=turn_number,
             status=status,
             state=fresh_state,
             narration=narration,
-            reachable=reachable_destinations(fresh_state),
+            reachable=reachable,
+            incomplete_objectives=objectives,
+            enemies=enemies,
         )
 
     async def _maybe_update_recap(
@@ -435,6 +478,8 @@ class TurnService:
             narration=narration,
             status=status,
         )
+        progress_events = await self._apply_progress(session_id)
+        deps.events_this_turn.extend(progress_events)
         async for _progress in self._maybe_update_recap(
             session_id,
             player_text=text,
@@ -445,6 +490,7 @@ class TurnService:
             pass
         fresh_state = await self._store.get_snapshot(session_id)
         assert fresh_state is not None
+        reachable, objectives, enemies = _turn_guidance(fresh_state)
         return TurnResult(
             session_id=session_id,
             turn_number=turn_number,
@@ -453,5 +499,18 @@ class TurnService:
             state=fresh_state,
             events=list(deps.events_this_turn),
             status=status,
-            reachable=reachable_destinations(fresh_state),
+            reachable=reachable,
+            incomplete_objectives=objectives,
+            enemies=enemies,
         )
+
+    async def _apply_progress(self, session_id: str) -> list[Event]:
+        """Append Objective/Quest completion Events derived from current Snapshot."""
+        state = await self._store.get_snapshot(session_id)
+        if state is None:
+            return []
+        emitted: list[Event] = []
+        for event in plan_progress_events(state):
+            await self._store.append_event(session_id, event)
+            emitted.append(event)
+        return emitted

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fail-closed Action Intent gate before DM resolution (use/interact/resolve_enemy/travel/general)
 - Typed `take_item` / `use_item` Tools with `ItemTaken` / `ItemConsumed` Events for portable transfer and consumable quantity changes
 - Check-gated `resolve_enemy` Tool with `EnemyGroupDamaged` Events for deterministic Enemy Group aggregate HP
+- Deterministic Objective/Quest completion via `ObjectiveCompleted` / `QuestCompleted` Events and Turn guidance
 
 ### Changed
 
@@ -30,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pregen fighter rations marked `consumable`; Item model carries an optional consumable flag
 - Enemy Group Snapshots serialize `max_hp`, `remaining_count`, and `defeated_count` derived fields
 - D-026: unused successful Checks this Turn gate `resolve_enemy`
+- Turn `done` / `TurnResult` expose incomplete objectives and Enemy Group health alongside reachable destinations
+- D-027: predicate-driven Objective and Quest completion after Turn mutations
 
 ### Fixed
 

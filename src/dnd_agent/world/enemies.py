@@ -18,6 +18,44 @@ class ResolveEnemyPlan(BaseModel):
     defeated_count: int = Field(ge=0)
 
 
+class EnemyStatus(BaseModel):
+    """Authoritative Enemy Group health for Turn guidance."""
+
+    id: str
+    name: str
+    location_id: str
+    current_hp: int = Field(ge=0)
+    max_hp: int = Field(ge=0)
+    remaining_count: int = Field(ge=0)
+    defeated_count: int = Field(ge=0)
+
+
+def enemy_statuses(state: GameState) -> list[EnemyStatus]:
+    return [
+        EnemyStatus(
+            id=group.id,
+            name=group.name,
+            location_id=group.location_id,
+            current_hp=group.current_hp,
+            max_hp=group.max_hp,
+            remaining_count=group.remaining_count,
+            defeated_count=group.defeated_count,
+        )
+        for group in state.world.enemy_groups
+    ]
+
+
+def format_enemy_status_lines(statuses: list[EnemyStatus]) -> str:
+    if not statuses:
+        return "- (none)"
+    return "\n".join(
+        f"- {status.id} ({status.name}) @ {status.location_id}: "
+        f"HP {status.current_hp}/{status.max_hp}, "
+        f"remaining {status.remaining_count}, defeated {status.defeated_count}"
+        for status in statuses
+    )
+
+
 def _find_group(state: GameState, enemy_group_id: str) -> EnemyGroup | None:
     for group in state.world.enemy_groups:
         if group.id == enemy_group_id:

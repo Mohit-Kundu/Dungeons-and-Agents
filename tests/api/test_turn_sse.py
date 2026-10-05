@@ -89,6 +89,12 @@ async def test_play_turn_streams_sse_contract(client: AsyncClient) -> None:
     done = events[-1]
     assert done["status"] == "ok"
     assert [dest["id"] for dest in done["reachable"]] == ["twisting_tunnel"]
+    assert [obj["id"] for obj in done["incomplete_objectives"]] == [
+        "reach_goblin_den",
+        "defeat_den_goblins",
+        "recover_stolen_goods",
+    ]
+    assert done["enemies"][0]["id"] == "den_goblins"
     assert "scratches" in "".join(
         event["text"] for event in events if event["type"] == "narration_delta"
     )

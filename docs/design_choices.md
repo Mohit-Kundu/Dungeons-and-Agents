@@ -323,3 +323,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Count unused successful `SkillCheckResolved` Events in `events_this_turn` against `EnemyGroupDamaged` Events — Turn-local, deterministic, minimal state
 - **Decision:** `resolve_enemy` plans damage only when the Enemy Group is present and undefeated and `successes - damages` for this Turn is at least one. Damage is `min(resolution_damage, current_hp)`; derived remaining/defeated counts come from `EnemyGroup` after updating aggregate HP.
 - **Consequences:** Failed Checks cannot fund damage; one success funds one resolution; defeated groups reject further damage and leave available enemy ids.
+
+### D-027: Predicate-driven Objective and Quest completion
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 06 needs Goblin Cave Objectives and the Quest to complete from Location visits, inventory, and Enemy Group defeat without trusting DM narration or Recap text.
+- **Options considered:**
+  - DM Tool that marks Objectives complete — simple; reintroduces narration as authority
+  - Recompute Objective status only in Snapshot views without Events — fast; breaks Event-log audit and replay of completion moments
+  - Evaluate predicates after Turn mutations and emit idempotent `ObjectiveCompleted` / `QuestCompleted` Events — authoritative and replayable
+- **Decision:** `plan_progress_events` evaluates Scenario predicates against GameState after each Turn. Satisfied active Objectives emit `ObjectiveCompleted` once; when none remain active the Quest emits `QuestCompleted` once. Turn results, SSE `done`, DM context, and CLI show incomplete Objectives, Enemy Group health/counts, and Reachable Destinations.
+- **Consequences:** Completion is Turn-batched rather than mid-tool; Quest stays complete on later Turns; Quest predicates beyond Goblin Cave's three types remain future work.

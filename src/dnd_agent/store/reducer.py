@@ -14,13 +14,23 @@ from dnd_agent.domain.events import (
     ItemTaken,
     LocationChanged,
     LongRestCompleted,
+    ObjectiveCompleted,
+    QuestCompleted,
     SavingThrowResolved,
     SessionCreated,
     ShortRestCompleted,
     SkillCheckResolved,
     SummaryUpdated,
 )
-from dnd_agent.domain.models import Character, EnemyGroup, GameState, Item, PlayableWorld, WorldLocation
+from dnd_agent.domain.models import (
+    Character,
+    EnemyGroup,
+    GameState,
+    Item,
+    Objective,
+    PlayableWorld,
+    WorldLocation,
+)
 
 
 def _with_character(state: GameState, character: Character, **updates: object) -> GameState:
@@ -110,6 +120,24 @@ def _replace_enemy_group(
     if not found:
         raise KeyError(f"unknown enemy group: {enemy_group_id}")
     return world.model_copy(update={"enemy_groups": groups})
+
+
+def _replace_objective(
+    world: PlayableWorld,
+    objective_id: str,
+    updater: Callable[[Objective], Objective],
+) -> PlayableWorld:
+    objectives: list[Objective] = []
+    found = False
+    for objective in world.objectives:
+        if objective.id == objective_id:
+            objectives.append(updater(objective))
+            found = True
+        else:
+            objectives.append(objective)
+    if not found:
+        raise KeyError(f"unknown objective: {objective_id}")
+    return world.model_copy(update={"objectives": objectives})
 
 
 def apply_event(state: GameState | None, event: Event) -> GameState:
@@ -220,6 +248,23 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
 
         world = _replace_enemy_group(state.world, event.enemy_group_id, _apply_damage)
         return state.model_copy(update={"world": world})
+
+    if isinstance(event, ObjectiveCompleted):
+        def _complete_objective(objective: Objective) -> Objective:
+            if objective.status == "completed":
+                return objective
+            return objective.model_copy(update={"status": "completed"})
+
+        world = _replace_objective(state.world, event.objective_id, _complete_objective)
+        return state.model_copy(update={"world": world})
+
+    if isinstance(event, QuestCompleted):
+        if state.quest.id != event.quest_id:
+            raise ValueError(f"quest id mismatch: {event.quest_id}")
+        if state.quest.status == "completed":
+            return state
+        quest = state.quest.model_copy(update={"status": "completed"})
+        return state.model_copy(update={"quest": quest})
 
     if isinstance(event, SummaryUpdated):
         return state.model_copy(update={"summary": event.summary})

@@ -132,6 +132,24 @@ class EnemyGroupDamaged(BaseModel):
     reason: str = ""
 
 
+class ObjectiveCompleted(BaseModel):
+    """Mark one Objective complete after its predicate becomes true."""
+
+    type: Literal["objective_completed"] = "objective_completed"
+    objective_id: str
+    title: str = ""
+    reason: str = ""
+
+
+class QuestCompleted(BaseModel):
+    """Mark the Session Quest complete after all Objectives are complete."""
+
+    type: Literal["quest_completed"] = "quest_completed"
+    quest_id: str
+    title: str = ""
+    reason: str = ""
+
+
 class SummaryUpdated(BaseModel):
     """Immutable Recap write into GameState.summary."""
 
@@ -153,6 +171,8 @@ Event = Annotated[
     | ItemTaken
     | ItemConsumed
     | EnemyGroupDamaged
+    | ObjectiveCompleted
+    | QuestCompleted
     | SummaryUpdated,
     Field(discriminator="type"),
 ]
@@ -170,5 +190,7 @@ EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(
     | ItemTaken
     | ItemConsumed
     | EnemyGroupDamaged
+    | ObjectiveCompleted
+    | QuestCompleted
     | SummaryUpdated
 )
