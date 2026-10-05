@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     model: str = "google-gla:gemini-2.5-flash"
     gemini_api_key: str | None = None
     openai_api_key: str | None = None
+    openai_base_url: str | None = None
     ollama_base_url: str = "http://127.0.0.1:11434/v1"
 
     database_url: str = "sqlite:///./data/dnd_agent.db"
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     memory_recent_turns: int = 8
     summary_every_n_turns: int = 5
     max_tool_calls_per_turn: int = 12
+    agent_retries: int = 2
 
 
 def get_settings() -> Settings:

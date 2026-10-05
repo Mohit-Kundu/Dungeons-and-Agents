@@ -30,6 +30,9 @@ def test_settings_have_documented_defaults(tmp_path: Path, monkeypatch: pytest.M
     assert settings.memory_recent_turns == 8
     assert settings.summary_every_n_turns == 5
     assert settings.max_tool_calls_per_turn == 12
+    assert settings.agent_retries == 2
+    assert settings.openai_base_url is None
+    assert settings.ollama_base_url == "http://127.0.0.1:11434/v1"
 
 
 def test_settings_read_model_from_environment(

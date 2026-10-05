@@ -21,6 +21,7 @@ from pydantic_ai.usage import UsageLimits
 
 from dnd_agent.agent.deps import TurnDeps
 from dnd_agent.agent.dm_agent import build_dm_agent
+from dnd_agent.agent.providers import resolve_model
 from dnd_agent.config import Settings, get_settings
 from dnd_agent.domain.events import Event
 from dnd_agent.domain.models import GameState
@@ -98,8 +99,11 @@ class TurnService:
     ) -> None:
         self._store = store
         self._settings = settings or get_settings()
-        self._model = model if model is not None else self._settings.model
-        self._agent = build_dm_agent(self._model)
+        self._model = model if model is not None else resolve_model(self._settings)
+        self._agent = build_dm_agent(
+            self._model,
+            retries=self._settings.agent_retries,
+        )
         self._locks = locks if locks is not None else SessionLockRegistry()
 
     async def stream_turn(

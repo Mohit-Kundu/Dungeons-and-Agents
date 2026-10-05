@@ -20,12 +20,12 @@ from dnd_agent.agent.tools import (
 )
 
 
-def build_dm_agent(model: Model | str) -> Agent[TurnDeps, str]:
+def build_dm_agent(model: Model | str, *, retries: int = 2) -> Agent[TurnDeps, str]:
     agent: Agent[TurnDeps, str] = Agent(
         model,
         deps_type=TurnDeps,
         system_prompt=DM_SYSTEM_PROMPT,
-        retries=2,
+        retries=retries,
     )
     agent.tool(get_state)
     agent.tool(roll_dice)

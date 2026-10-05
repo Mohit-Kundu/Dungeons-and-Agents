@@ -29,3 +29,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `POST /sessions/{id}/turns` streams SSE (`narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`)
 - Per-session Turn lock; aborted Turns keep committed Events
 - CLI `dnd play` consumes SSE and prints live narration + mechanical events
+- `resolve_model` wires Gemini / OpenAI (optional base URL for Luna) / Ollama from `DND_*` settings
+- `DND_AGENT_RETRIES` + documented provider limits; opt-in `@pytest.mark.live` provider smokes

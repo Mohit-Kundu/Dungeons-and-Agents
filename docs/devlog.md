@@ -4,6 +4,30 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 06: multi-provider support
+
+### Done
+
+- `resolve_model(settings)` for Gemini / OpenAI (+ base URL) / Ollama
+- Settings: `openai_base_url`, `agent_retries`; TurnService uses resolved model + retries
+- Mocked provider failure tests; live smokes under `tests/live/` deselected by default
+- `.env.example` documents provider strings and limits
+
+### Broken / surprises
+
+- PydanticAI `Agent(retries=N)` lands on `_max_tool_retries` / `_max_output_retries`, not `_retries`
+- Normal `pytest` needs `addopts = -m 'not live'` so live tests never gate CI
+
+### Learned
+
+- Keep provider credentials on `DND_*` and inject into provider constructors rather than relying on ambient `GOOGLE_API_KEY` / `OPENAI_API_KEY` alone
+
+### Next
+
+- Ticket 07 (playable POC milestone)
+
+---
+
 ## 2026-10-04 — Ticket 05: streaming narration
 
 ### Done

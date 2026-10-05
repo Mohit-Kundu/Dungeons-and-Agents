@@ -45,7 +45,7 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
 ### D-003: Gemini as the default model provider
 
 - **Date:** 2026-10-04
-- **Status:** accepted
+- **Status:** superseded by D-016
 - **Context:** Need a default cloud model with a path to OpenAI (including Luna) and local Ollama.
 - **Options considered:**
   - Thin custom adapter — full control; extra code to maintain
@@ -192,3 +192,14 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Replace `POST /turns` with SSE only — one contract; breaks interim JSON clients
 - **Decision:** `POST /sessions/{id}/turns` returns `text/event-stream` with `narration_delta`, `tool_call`, `roll`, `state_changed`, `error`, `done`. A shared `SessionLockRegistry` on app state serializes concurrent Turns per Session.
 - **Consequences:** CLI consumes SSE; FunctionModel tests need `stream_function` for stream paths; `run_turn` remains for non-stream unit/agent tests.
+
+### D-016: Resolve Models from DND_* Settings
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 06 needs Gemini / OpenAI / Ollama without rules/store changes; ambient provider env vars alone ignore our `DND_*` keys. Supersedes D-003’s “pass raw model strings” approach while keeping Gemini as the default.
+- **Options considered:**
+  - Pass raw `settings.model` strings to PydanticAI — simple; misses `DND_GEMINI_API_KEY` / Ollama URL wiring
+  - `resolve_model(settings)` constructing provider-specific Models — explicit; small adapter
+- **Decision:** Default `DND_MODEL=google-gla:gemini-2.5-flash`. Parse `provider:model`; build `GoogleModel` / `OpenAIChatModel` / `OllamaModel` with `DND_*` keys and optional `DND_OPENAI_BASE_URL` (Luna/proxies) or `DND_OLLAMA_BASE_URL`. Fail with `ProviderConfigError` when required creds are missing. Live smokes stay opt-in.
+- **Consequences:** TurnService defaults to `resolve_model`; pytest excludes `@pytest.mark.live` by default.
