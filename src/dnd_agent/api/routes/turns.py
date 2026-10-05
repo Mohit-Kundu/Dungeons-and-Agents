@@ -14,6 +14,7 @@ from dnd_agent.services.session_locks import SessionLockRegistry
 from dnd_agent.services.stream_events import TurnStreamEvent
 from dnd_agent.services.turns import TurnService
 from dnd_agent.store.event_store import EventStore
+from dnd_agent.world.intent import CodeIntentService, IntentProposer, IntentService
 
 router = APIRouter(tags=["turns"])
 
@@ -41,6 +42,20 @@ def _locks(request: Request) -> SessionLockRegistry:
     return locks
 
 
+def _intent_service(request: Request) -> IntentProposer:
+    """Prefer an app-injected intent service; otherwise code for test models, LLM in prod."""
+    configured = getattr(request.app.state, "intent_service", None)
+    if configured is not None:
+        return configured  # type: ignore[no-any-return]
+    if _turn_model(request) is not None:
+        # FunctionModel / injected DM models must not also drive intent extraction.
+        return CodeIntentService()
+    from dnd_agent.agent.providers import resolve_model
+    from dnd_agent.config import get_settings
+
+    return IntentService(resolve_model(get_settings()))
+
+
 def _sse_message(event: TurnStreamEvent) -> str:
     payload = event.model_dump(mode="json")
     data = json.dumps(payload, separators=(",", ":"))
@@ -65,6 +80,7 @@ async def play_turn(
         store,
         model=_turn_model(request),
         locks=_locks(request),
+        intent=_intent_service(request),
     )
 
     async def event_publisher() -> AsyncIterator[str]:

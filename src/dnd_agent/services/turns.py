@@ -40,13 +40,18 @@ from dnd_agent.services.stream_events import (
     TurnStreamEvent,
 )
 from dnd_agent.store.event_store import EventStore
+from dnd_agent.world.intent import (
+    CodeIntentService,
+    IntentProposer,
+    ValidatedActionIntent,
+    format_validated_intent,
+    rejected_intent_narration,
+    validate_action_intent,
+)
 from dnd_agent.world.travel import (
     ReachableDestination,
-    detect_travel_destination,
     format_reachable_lines,
     reachable_destinations,
-    rejected_travel_narration,
-    validate_travel,
 )
 
 ROLLING_TOOLS = frozenset({"skill_check", "saving_throw", "roll_dice", "short_rest"})
@@ -94,11 +99,15 @@ def _format_turn_prompt(
     state: GameState,
     recent_turns: list[dict],
     player_text: str,
+    *,
+    intent: ValidatedActionIntent,
 ) -> str:
     return (
         f"{_format_context(state, recent_turns)}\n\n"
+        f"Validated Action Intent:\n{format_validated_intent(intent)}\n\n"
         f"Player action:\n{player_text}\n\n"
-        "Resolve the action. Call tools for any Check or roll before narrating the outcome. "
+        "Resolve the action using only the validated Action Intent ids. "
+        "Call tools for any Check or roll before narrating the outcome. "
         "Use move_to only with a reachable destination id from the list above."
     )
 
@@ -160,6 +169,7 @@ class TurnService:
         model: Model | str | None = None,
         locks: SessionLockRegistry | None = None,
         recap: RecapService | None = None,
+        intent: IntentProposer | None = None,
     ) -> None:
         self._store = store
         self._settings = settings or get_settings()
@@ -170,6 +180,7 @@ class TurnService:
         )
         self._locks = locks if locks is not None else SessionLockRegistry()
         self._recap = recap if recap is not None else RecapService(self._model)
+        self._intent: IntentProposer = intent if intent is not None else CodeIntentService()
 
     async def stream_turn(
         self, session_id: str, player_text: str
@@ -183,37 +194,35 @@ class TurnService:
             async for event in self._stream_turn_locked(session_id, text):
                 yield event
 
-    async def _reject_illegal_travel(
+    async def _resolve_intent(
         self,
         session_id: str,
         text: str,
         state: GameState,
-    ) -> TurnResult | None:
-        destination = detect_travel_destination(text, state)
-        if destination is None:
-            return None
-        try:
-            validate_travel(state, destination)
-        except ValueError as exc:
-            destinations = reachable_destinations(state)
-            narration = rejected_travel_narration(str(exc), destinations)
-            turn_number = await self._store.add_turn(
-                session_id,
-                player_text=text,
-                narration=narration,
-                status="no_progress",
-            )
-            return TurnResult(
-                session_id=session_id,
-                turn_number=turn_number,
-                player_text=text,
-                narration=narration,
-                state=state,
-                events=[],
-                status="no_progress",
-                reachable=destinations,
-            )
-        return None
+    ) -> tuple[ValidatedActionIntent | None, TurnResult | None]:
+        proposed = await self._intent.propose(text, state)
+        validation = validate_action_intent(state, proposed)
+        if validation.ok and validation.intent is not None:
+            return validation.intent, None
+
+        destinations = reachable_destinations(state)
+        narration = rejected_intent_narration(validation.reason or "invalid Action Intent")
+        turn_number = await self._store.add_turn(
+            session_id,
+            player_text=text,
+            narration=narration,
+            status="no_progress",
+        )
+        return None, TurnResult(
+            session_id=session_id,
+            turn_number=turn_number,
+            player_text=text,
+            narration=narration,
+            state=state,
+            events=[],
+            status="no_progress",
+            reachable=destinations,
+        )
 
     async def _stream_turn_locked(
         self, session_id: str, text: str
@@ -222,7 +231,7 @@ class TurnService:
         if state is None:
             raise KeyError(f"session not found: {session_id}")
 
-        rejected = await self._reject_illegal_travel(session_id, text, state)
+        validated, rejected = await self._resolve_intent(session_id, text, state)
         if rejected is not None:
             yield DoneEvent(
                 turn_number=rejected.turn_number,
@@ -232,13 +241,14 @@ class TurnService:
                 reachable=list(rejected.reachable),
             )
             return
+        assert validated is not None
 
         recent = await self._store.list_recent_turns(
             session_id,
             limit=self._settings.memory_recent_turns,
         )
         deps = TurnDeps(store=self._store, session_id=session_id)
-        prompt = _format_turn_prompt(state, recent, text)
+        prompt = _format_turn_prompt(state, recent, text, intent=validated)
 
         status = "ok"
         narration_parts: list[str] = []
@@ -392,16 +402,17 @@ class TurnService:
         if state is None:
             raise KeyError(f"session not found: {session_id}")
 
-        rejected = await self._reject_illegal_travel(session_id, text, state)
+        validated, rejected = await self._resolve_intent(session_id, text, state)
         if rejected is not None:
             return rejected
+        assert validated is not None
 
         recent = await self._store.list_recent_turns(
             session_id,
             limit=self._settings.memory_recent_turns,
         )
         deps = TurnDeps(store=self._store, session_id=session_id)
-        prompt = _format_turn_prompt(state, recent, text)
+        prompt = _format_turn_prompt(state, recent, text, intent=validated)
 
         status = "ok"
         try:

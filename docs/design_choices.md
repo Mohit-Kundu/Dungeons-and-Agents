@@ -279,7 +279,7 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
 ### D-023: Interim explicit-travel short-circuit before full Action Intent
 
 - **Date:** 2026-10-04
-- **Status:** accepted
+- **Status:** superseded by D-024
 - **Context:** Ticket 02 needs no-progress Turns for illegal travel before the full fail-closed Action Intent service (ticket 03 / D-020) exists. `move_to` already rejects non-reachable exits, but free-text travel could still reach the DM first.
 - **Options considered:**
   - Wait for full Action Intent — cleanest alignment with D-020; leaves travel guardrails incomplete for this ticket
@@ -287,3 +287,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Detect travel verb + unique Location id/name, validate exits, and short-circuit illegal attempts as `no_progress` — covers clear cases now; heuristic until ticket 03
 - **Decision:** Use the verb + unique Location heuristic as an interim pre-DM gate for travel only. Legal explicit travel still goes to the DM, which must call `move_to` with a Reachable Destination id. Ticket 03 will supersede this heuristic with structured Action Intent validation.
 - **Consequences:** Some non-verb travel phrasing still relies on `move_to` + prompt discipline; ambiguous multi-Location text is not short-circuited.
+
+### D-024: Fail-closed Action Intent gate before DM resolution
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 03 needs unavailable inventory items, surroundings, enemies, and destinations rejected before narration can invent their use. D-023 only covered clear travel phrasing.
+- **Options considered:**
+  - Expand verb heuristics for every action kind — deterministic; brittle natural language
+  - Propose structured Action Intent, validate Playable Fact ids in code, then invoke the DM — fail-closed and testable with model doubles
+  - Let Tools alone reject illegal targets — state-safe; illegal use can still be narrated without Tools
+- **Decision:** Every Turn proposes an Action Intent (`use` / `interact` / `resolve_enemy` / `travel` / `general`). Code validates referenced ids against inventory, current Location surroundings/enemies, and Reachable Destinations. Invalid, ambiguous, or low-confidence intents become `no_progress` Turns with no Events. Validated intents are injected into the DM prompt. Production uses an LLM proposer; tests may inject stubs or a code proposer that preserves travel detection.
+- **Consequences:** Supersedes D-023. DM context always includes validated ids. Intent extraction adds a model call in production unless a code proposer is configured.

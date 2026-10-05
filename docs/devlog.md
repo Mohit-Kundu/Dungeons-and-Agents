@@ -4,6 +4,31 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 03 (authoritative-adventure-state): reject unavailable targets
+
+### Done
+
+- Added Proposed/Validated Action Intent models and fail-closed `validate_action_intent`
+- TurnService proposes intent before the DM; invalid/ambiguous/uncertain intents become `no_progress` with no Events
+- Validated intent ids are injected into the DM prompt; tools still gate mechanical changes
+- LLM IntentService for production; CodeIntentService / stubs for deterministic tests
+- Superseded D-023 with D-024; 128 tests green
+
+### Broken / surprises
+
+- Sharing the DM FunctionModel with intent extraction steals call turns — keep intent proposers injectable/isolated in tests
+
+### Learned
+
+- Validate ids in code after structured proposal; do not trust the proposer to enforce availability
+
+### Next
+
+- Ticket 04: use and transfer authoritative items
+- Ticket 07: refresh Recaps only on restore or command
+
+---
+
 ## 2026-10-04 — Ticket 02 (authoritative-adventure-state): constrain travel
 
 ### Done
