@@ -11,6 +11,7 @@ from dnd_agent.domain.events import (
     ConditionAdded,
     ConditionRemoved,
     DiceRolled,
+    EnemyGroupDamaged,
     ItemConsumed,
     ItemTaken,
     LocationChanged,
@@ -24,6 +25,7 @@ from dnd_agent.rules.conditions import normalize_condition
 from dnd_agent.rules.dice import DiceRng, roll
 from dnd_agent.rules.rests import long_rest, short_rest
 from dnd_agent.rules.saves import saving_throw
+from dnd_agent.world.enemies import plan_resolve_enemy
 from dnd_agent.world.inventory import plan_consume, plan_take, plan_use
 from dnd_agent.world.travel import validate_travel
 
@@ -351,3 +353,41 @@ async def use_item(
         return {"error": str(exc)}
     ctx.deps.events_this_turn.append(event)
     return event.model_dump(mode="json")
+
+
+async def resolve_enemy(
+    ctx: RunContext[TurnDeps],
+    enemy_group_id: str,
+    reason: str = "",
+) -> dict[str, Any]:
+    """Apply Scenario resolution damage after a successful Check this Turn."""
+    state = await ctx.deps.store.get_snapshot(ctx.deps.session_id)
+    if state is None:
+        return {"error": f"session not found: {ctx.deps.session_id}"}
+    try:
+        plan = plan_resolve_enemy(
+            state,
+            enemy_group_id,
+            turn_events=list(ctx.deps.events_this_turn),
+        )
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+    event = EnemyGroupDamaged(
+        enemy_group_id=plan.enemy_group_id,
+        damage=plan.damage,
+        current_hp=plan.current_hp,
+        reason=reason,
+    )
+    try:
+        await ctx.deps.store.append_event(ctx.deps.session_id, event)
+    except (KeyError, ValueError) as exc:
+        return {"error": str(exc)}
+    ctx.deps.events_this_turn.append(event)
+    return {
+        **event.model_dump(mode="json"),
+        "max_hp": plan.max_hp,
+        "remaining_count": plan.remaining_count,
+        "defeated_count": plan.defeated_count,
+        "name": plan.name,
+    }

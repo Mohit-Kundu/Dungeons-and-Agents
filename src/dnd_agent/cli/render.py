@@ -108,6 +108,11 @@ def format_turn_event(event: dict[str, Any]) -> str:
         )
     if event_type == "location_changed":
         return f"[yellow]Location[/yellow] → {event.get('location')}"
+    if event_type == "enemy_group_damaged":
+        return (
+            f"[yellow]Enemy[/yellow] {event.get('enemy_group_id')} "
+            f"-{event.get('damage')} HP → {event.get('current_hp')}"
+        )
     return f"[yellow]Event[/yellow] {event_type}"
 
 

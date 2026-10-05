@@ -8,6 +8,7 @@ from dnd_agent.domain.events import (
     ConditionAdded,
     ConditionRemoved,
     DiceRolled,
+    EnemyGroupDamaged,
     Event,
     ItemConsumed,
     ItemTaken,
@@ -19,7 +20,7 @@ from dnd_agent.domain.events import (
     SkillCheckResolved,
     SummaryUpdated,
 )
-from dnd_agent.domain.models import Character, GameState, Item, PlayableWorld, WorldLocation
+from dnd_agent.domain.models import Character, EnemyGroup, GameState, Item, PlayableWorld, WorldLocation
 
 
 def _with_character(state: GameState, character: Character, **updates: object) -> GameState:
@@ -91,6 +92,24 @@ def _replace_location(
     if not found:
         raise ValueError(f"unknown location: {location_id}")
     return world.model_copy(update={"locations": locations})
+
+
+def _replace_enemy_group(
+    world: PlayableWorld,
+    enemy_group_id: str,
+    updater: Callable[[EnemyGroup], EnemyGroup],
+) -> PlayableWorld:
+    groups: list[EnemyGroup] = []
+    found = False
+    for group in world.enemy_groups:
+        if group.id == enemy_group_id:
+            groups.append(updater(group))
+            found = True
+        else:
+            groups.append(group)
+    if not found:
+        raise KeyError(f"unknown enemy group: {enemy_group_id}")
+    return world.model_copy(update={"enemy_groups": groups})
 
 
 def apply_event(state: GameState | None, event: Event) -> GameState:
@@ -189,6 +208,17 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
             )
 
         world = _replace_location(state.world, event.location_id, _consume_from_location)
+        return state.model_copy(update={"world": world})
+
+    if isinstance(event, EnemyGroupDamaged):
+        def _apply_damage(group: EnemyGroup) -> EnemyGroup:
+            if group.current_hp <= 0:
+                raise ValueError(f"enemy group already defeated: {group.id}")
+            if event.current_hp < 0 or event.current_hp >= group.current_hp:
+                raise ValueError(f"invalid enemy HP after damage: {group.id}")
+            return group.model_copy(update={"current_hp": event.current_hp})
+
+        world = _replace_enemy_group(state.world, event.enemy_group_id, _apply_damage)
         return state.model_copy(update={"world": world})
 
     if isinstance(event, SummaryUpdated):

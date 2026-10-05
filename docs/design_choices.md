@@ -311,3 +311,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Intent-only quantity changes without Tools — cannot narrate successful take/use while keeping mechanical honesty
 - **Decision:** Location `Item` stacks are portable; Interactables are non-portable. `take_item` transfers a nearby stack into inventory. `use_item` validates availability; Items marked `consumable` emit `ItemConsumed` and deduct quantity (removing zero stacks). Illegal take/use returns a Tool error with no Event.
 - **Consequences:** Non-consumable use is validation-only (no Event). Scenario/character content must set `consumable` when quantity should change on use.
+
+### D-026: Enemy resolution consumes unused successful Checks this Turn
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 05 / D-021 needs Check-gated Enemy Group damage without trusting narration, and without inventing a combat economy of attack rolls.
+- **Options considered:**
+  - Any prior Session success unlocks damage — replay-safe but decouples evidence from the current Turn
+  - Couple Check skill/reason to a specific enemy id — precise; brittle for POC narration and content
+  - Count unused successful `SkillCheckResolved` Events in `events_this_turn` against `EnemyGroupDamaged` Events — Turn-local, deterministic, minimal state
+- **Decision:** `resolve_enemy` plans damage only when the Enemy Group is present and undefeated and `successes - damages` for this Turn is at least one. Damage is `min(resolution_damage, current_hp)`; derived remaining/defeated counts come from `EnemyGroup` after updating aggregate HP.
+- **Consequences:** Failed Checks cannot fund damage; one success funds one resolution; defeated groups reject further damage and leave available enemy ids.

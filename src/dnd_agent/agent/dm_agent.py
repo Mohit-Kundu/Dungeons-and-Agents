@@ -13,6 +13,7 @@ from dnd_agent.agent.tools import (
     long_rest_tool,
     move_to,
     remove_condition,
+    resolve_enemy,
     roll_dice,
     saving_throw_tool,
     short_rest_tool,
@@ -40,4 +41,5 @@ def build_dm_agent(model: Model | str, *, retries: int = 2) -> Agent[TurnDeps, s
     agent.tool(move_to)
     agent.tool(take_item)
     agent.tool(use_item)
+    agent.tool(resolve_enemy)
     return agent

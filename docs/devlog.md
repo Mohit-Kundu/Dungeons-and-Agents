@@ -4,6 +4,31 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 05 (authoritative-adventure-state): deterministic enemy damage
+
+### Done
+
+- Pure `plan_resolve_enemy` requires a present Enemy Group plus an unused successful Check in the current Turn
+- `resolve_enemy` Tool emits `EnemyGroupDamaged`; Reducer updates aggregate `current_hp` and derived remaining/defeated counts
+- Damage clamps at zero; defeated groups reject further damage and drop out of available enemy ids
+- Turn/Snapshot JSON exposes `max_hp`, `remaining_count`, and `defeated_count`; streaming `state_changed` covers enemy Events
+- Recorded D-026 for Turn-local Check evidence accounting
+
+### Broken / surprises
+
+- Multi-tool stream tests need DeltaToolCall `stream_function` scripting (same as inventory streaming)
+
+### Learned
+
+- One successful Check funds one enemy resolution; counting Check vs damage Events in `events_this_turn` keeps evidence Turn-local without extra state
+
+### Next
+
+- Ticket 06: complete objectives and quests
+- Ticket 07: refresh Recaps only on restore or command
+
+---
+
 ## 2026-10-04 — Ticket 04 (authoritative-adventure-state): use and transfer items
 
 ### Done

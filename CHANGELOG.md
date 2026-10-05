@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deterministic no-progress Turns for illegal explicit travel attempts
 - Fail-closed Action Intent gate before DM resolution (use/interact/resolve_enemy/travel/general)
 - Typed `take_item` / `use_item` Tools with `ItemTaken` / `ItemConsumed` Events for portable transfer and consumable quantity changes
+- Check-gated `resolve_enemy` Tool with `EnemyGroupDamaged` Events for deterministic Enemy Group aggregate HP
 
 ### Changed
 
@@ -27,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LocationChanged` also records visited Location ids on PlayableWorld
 - D-023 interim travel heuristic superseded by D-024 Action Intent validation
 - Pregen fighter rations marked `consumable`; Item model carries an optional consumable flag
+- Enemy Group Snapshots serialize `max_hp`, `remaining_count`, and `defeated_count` derived fields
+- D-026: unused successful Checks this Turn gate `resolve_enemy`
 
 ### Fixed
 

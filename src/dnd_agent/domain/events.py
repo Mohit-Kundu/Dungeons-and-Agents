@@ -122,6 +122,16 @@ class ItemConsumed(BaseModel):
     reason: str = ""
 
 
+class EnemyGroupDamaged(BaseModel):
+    """Deterministic aggregate HP deduction for a present Enemy Group."""
+
+    type: Literal["enemy_group_damaged"] = "enemy_group_damaged"
+    enemy_group_id: str
+    damage: int = Field(ge=1)
+    current_hp: int = Field(ge=0)
+    reason: str = ""
+
+
 class SummaryUpdated(BaseModel):
     """Immutable Recap write into GameState.summary."""
 
@@ -142,6 +152,7 @@ Event = Annotated[
     | LocationChanged
     | ItemTaken
     | ItemConsumed
+    | EnemyGroupDamaged
     | SummaryUpdated,
     Field(discriminator="type"),
 ]
@@ -158,5 +169,6 @@ EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(
     | LocationChanged
     | ItemTaken
     | ItemConsumed
+    | EnemyGroupDamaged
     | SummaryUpdated
 )

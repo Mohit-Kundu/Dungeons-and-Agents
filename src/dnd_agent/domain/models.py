@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 
 class AbilityScores(BaseModel):
@@ -72,15 +72,22 @@ class EnemyGroup(BaseModel):
     resolution_damage: int = Field(ge=1)
     current_hp: int = Field(ge=0)
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def max_hp(self) -> int:
         return self.count * self.hp_per_enemy
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def remaining_count(self) -> int:
         if self.current_hp <= 0:
             return 0
         return (self.current_hp + self.hp_per_enemy - 1) // self.hp_per_enemy
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def defeated_count(self) -> int:
+        return self.count - self.remaining_count
 
 
 class LocationVisitedPredicate(BaseModel):

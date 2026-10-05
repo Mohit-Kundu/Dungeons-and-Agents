@@ -27,6 +27,7 @@ STATE_EVENT_TYPES = frozenset(
         "location_changed",
         "item_taken",
         "item_consumed",
+        "enemy_group_damaged",
     }
 )
 
