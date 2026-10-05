@@ -227,3 +227,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Always print raw tool args — transparent; breaks immersion
 - **Decision:** Emit `progress` at Turn start, before rolling Tools, and after roll reveals while awaiting narration. CLI hides raw `tool_call` lines, animates waits with cycling ellipsis, and prints permanent dramatic Check/Save/roll outcomes.
 - **Consequences:** SSE contract includes `progress`; clients should clear status UI before `narration_delta` / `error` / `done`.
+
+### D-019: Persist LLM Recap after every Turn
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Returning players need to know what happened so far and what happened last; Briefing alone is not enough after play starts.
+- **Options considered:**
+  - Generate Recap only on Session load — always fresh; slows restore and costs a call each load
+  - Persist Recap after every Turn via `SummaryUpdated` into `GameState.summary` — instant restore; extra model call per Turn
+  - Refresh every N Turns only — cheaper; can omit intermediate detail
+- **Decision:** After each successful Turn, a no-tools Recap agent folds prior `summary` + latest exchange + mechanical Events into a new Recap; append `SummaryUpdated`. Failures keep the prior Recap and do not abort the Turn. Emit `progress` phase `updating_recap` during the wait. `GET /sessions/{id}/overview` returns Snapshot + latest Turn; CLI `state` and pre-`play` show both.
+- **Consequences:** `GameState.summary` evolves from Briefing seed into the rolling Recap; latest action stays in the turns table, not on GameState. Aborted Turns do not rewrite the Recap.

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from dnd_agent.content.loader import load_character, load_scenario
-from dnd_agent.domain.events import SessionCreated
+from dnd_agent.domain.events import SessionCreated, SummaryUpdated
 from dnd_agent.store.event_store import EventStore
 from dnd_agent.store.reducer import fold_events
 
@@ -50,6 +50,21 @@ async def test_replay_events_matches_snapshot(store: EventStore) -> None:
     assert isinstance(events[0], SessionCreated)
     assert snapshot is not None
     assert fold_events(events) == snapshot
+
+
+async def test_summary_updated_persists_and_rebuilds(store: EventStore) -> None:
+    session = await store.create_session(scenario_id="goblin_cave", rng_seed=1)
+    await store.append_event(
+        session.session_id,
+        SummaryUpdated(summary="Tracks lead into the dark."),
+    )
+
+    snapshot = await store.get_snapshot(session.session_id)
+    rebuilt = await store.rebuild_snapshot(session.session_id)
+
+    assert snapshot is not None
+    assert snapshot.summary == "Tracks lead into the dark."
+    assert rebuilt.summary == snapshot.summary
 
 
 async def test_content_loader_reads_predefined_assets() -> None:

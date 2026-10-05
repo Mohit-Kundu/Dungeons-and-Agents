@@ -49,7 +49,7 @@ uv run dnd state <session_id>
 uv run dnd log <session_id>
 ```
 
-`dnd new` creates a Session of **Goblin Cave** with Brynn Ironfoot, prints the Briefing, and shows the Snapshot. `dnd play` streams live progress (waiting / rolling), mechanical reveals, and narration over SSE.
+`dnd new` creates a Session of **Goblin Cave** with Brynn Ironfoot, prints the Briefing, and shows the Snapshot. `dnd state` (and the start of `dnd play`) show the rolling Recap plus the latest Turn. `dnd play` streams live progress (waiting / rolling / Recap update), mechanical reveals, and narration over SSE.
 
 Suggested first loop:
 
@@ -74,7 +74,7 @@ Domain vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md). Design decisions live i
 - **No quest-completion Tool** — clearing the cave is narrative within the Scenario beats.
 - **No character creation / leveling** — one pregen Fighter.
 - **No multiplayer**, web UI, RAG rules lookup, or long-term campaign memory.
-- **Summary refresh** is stubbed (`GameState.summary` starts as the Scenario Briefing; rolling compression is not implemented yet).
+- **Recap is concise, not a full transcript** — `GameState.summary` starts as the Scenario Briefing and is rewritten after each successful Turn.
 
 ## Roadmap (out of scope for 0.1.0)
 

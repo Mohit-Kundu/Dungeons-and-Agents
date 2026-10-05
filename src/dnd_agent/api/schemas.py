@@ -19,5 +19,19 @@ class EventListResponse(BaseModel):
     events: list[Event]
 
 
+class LatestTurn(BaseModel):
+    turn_number: int
+    player_text: str
+    narration: str
+    status: str
+
+
+class SessionOverviewResponse(BaseModel):
+    """Snapshot Recap plus the latest completed Turn for Session restore."""
+
+    state: GameState
+    latest_turn: LatestTurn | None = None
+
+
 # Re-export GameState as the Session Snapshot response body.
 SessionStateResponse = GameState

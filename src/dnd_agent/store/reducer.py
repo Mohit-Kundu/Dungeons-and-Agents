@@ -13,6 +13,7 @@ from dnd_agent.domain.events import (
     SessionCreated,
     ShortRestCompleted,
     SkillCheckResolved,
+    SummaryUpdated,
 )
 from dnd_agent.domain.models import Character, GameState
 
@@ -83,6 +84,9 @@ def apply_event(state: GameState | None, event: Event) -> GameState:
 
     if isinstance(event, LocationChanged):
         return state.model_copy(update={"location": event.location})
+
+    if isinstance(event, SummaryUpdated):
+        return state.model_copy(update={"summary": event.summary})
 
     raise TypeError(f"unsupported event type: {type(event)!r}")
 

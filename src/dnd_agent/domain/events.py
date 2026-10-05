@@ -98,6 +98,14 @@ class LocationChanged(BaseModel):
     reason: str = ""
 
 
+class SummaryUpdated(BaseModel):
+    """Immutable Recap write into GameState.summary."""
+
+    type: Literal["summary_updated"] = "summary_updated"
+    summary: str
+    reason: str = ""
+
+
 Event = Annotated[
     SessionCreated
     | DiceRolled
@@ -107,7 +115,8 @@ Event = Annotated[
     | ConditionRemoved
     | ShortRestCompleted
     | LongRestCompleted
-    | LocationChanged,
+    | LocationChanged
+    | SummaryUpdated,
     Field(discriminator="type"),
 ]
 
@@ -121,4 +130,5 @@ EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(
     | ShortRestCompleted
     | LongRestCompleted
     | LocationChanged
+    | SummaryUpdated
 )

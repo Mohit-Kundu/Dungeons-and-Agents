@@ -15,6 +15,7 @@ from dnd_agent.cli.render import (
     TurnProgressDisplay,
     console,
     format_stream_event,
+    render_overview,
     render_state,
 )
 from dnd_agent.config import get_settings
@@ -141,9 +142,9 @@ def new_session(
 
 @app.command("state")
 def show_state(session_id: str = typer.Argument(..., help="Session id")) -> None:
-    """Show the current Snapshot for a Session."""
-    state = _with_api(lambda client: client.get_state(session_id))
-    render_state(state)
+    """Show Recap, latest Turn, and the current Snapshot for a Session."""
+    overview = _with_api(lambda client: client.get_overview(session_id))
+    render_overview(overview)
 
 
 @app.command("log")
@@ -162,6 +163,8 @@ def play_turn(
     """Play one Turn: stream narration and mechanical Events over SSE."""
 
     def _consume(client: ApiClient) -> GameState | None:
+        render_overview(client.get_overview(session_id))
+        console.print()
         return consume_turn_stream(client.play_turn(session_id, action))
 
     state = _with_api(_consume, hint_serve=True)

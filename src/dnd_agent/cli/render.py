@@ -9,6 +9,7 @@ from rich.panel import Panel
 from rich.status import Status
 from rich.table import Table
 
+from dnd_agent.api.schemas import LatestTurn, SessionOverviewResponse
 from dnd_agent.domain.models import GameState
 
 console = Console()
@@ -126,6 +127,30 @@ class TurnProgressDisplay:
         if self._status is not None:
             self._status.stop()
             self._status = None
+
+
+def format_latest_turn(turn: LatestTurn) -> str:
+    return (
+        f"[bold]Latest Turn {turn.turn_number}[/bold] ({turn.status})\n"
+        f"[cyan]You:[/cyan] {turn.player_text}\n"
+        f"[magenta]DM:[/magenta] {turn.narration}"
+    )
+
+
+def render_overview(overview: SessionOverviewResponse) -> None:
+    """Show Recap + latest exchange before the GameState panel."""
+    recap = overview.state.summary.strip()
+    if recap:
+        console.print(Panel(recap, title="Recap", border_style="yellow"))
+    if overview.latest_turn is not None:
+        console.print(
+            Panel(
+                format_latest_turn(overview.latest_turn),
+                title="Last thing that happened",
+                border_style="green",
+            )
+        )
+    render_state(overview.state)
 
 
 def render_state(state: GameState) -> None:

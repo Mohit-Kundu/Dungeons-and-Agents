@@ -37,7 +37,7 @@ class ProgressEvent(BaseModel):
     """Player-facing Turn phase for live CLI anticipation (D-018)."""
 
     type: Literal["progress"] = "progress"
-    phase: Literal["awaiting_dm", "rolling"]
+    phase: Literal["awaiting_dm", "rolling", "updating_recap"]
     label: str
 
 

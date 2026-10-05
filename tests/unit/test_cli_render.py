@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from dnd_agent.cli.render import format_stream_event, format_turn_event, progress_status_text
+from dnd_agent.api.schemas import LatestTurn
+from dnd_agent.cli.render import (
+    format_latest_turn,
+    format_stream_event,
+    format_turn_event,
+    progress_status_text,
+)
 
 
 def test_format_saving_throw_event() -> None:
@@ -84,6 +90,20 @@ def test_format_stream_event_progress_is_status_only() -> None:
         )
         is None
     )
+
+
+def test_format_latest_turn_labels_player_and_dm() -> None:
+    text = format_latest_turn(
+        LatestTurn(
+            turn_number=2,
+            player_text="I listen at the crack.",
+            narration="Whispers echo from deeper in.",
+            status="ok",
+        )
+    )
+    assert "Latest Turn 2" in text
+    assert "I listen at the crack." in text
+    assert "Whispers echo from deeper in." in text
 
 
 def test_format_stream_roll_is_dramatic_and_permanent() -> None:

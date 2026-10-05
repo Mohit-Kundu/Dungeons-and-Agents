@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException, Request
 from dnd_agent.api.schemas import (
     CreateSessionRequest,
     EventListResponse,
+    LatestTurn,
+    SessionOverviewResponse,
     SessionStateResponse,
 )
 from dnd_agent.store.event_store import EventStore
@@ -51,3 +53,16 @@ async def get_events(session_id: str, request: Request) -> EventListResponse:
         raise HTTPException(status_code=404, detail=f"session not found: {session_id}")
     events = await store.list_events(session_id)
     return EventListResponse(session_id=session_id, events=events)
+
+
+@router.get("/{session_id}/overview", response_model=SessionOverviewResponse)
+async def get_overview(session_id: str, request: Request) -> SessionOverviewResponse:
+    store = _store(request)
+    state = await store.get_snapshot(session_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail=f"session not found: {session_id}")
+    latest = await store.get_latest_turn(session_id)
+    return SessionOverviewResponse(
+        state=state,
+        latest_turn=LatestTurn.model_validate(latest) if latest is not None else None,
+    )

@@ -248,3 +248,7 @@ class EventStore:
         ]
         turns.reverse()
         return turns
+
+    async def get_latest_turn(self, session_id: str) -> dict[str, Any] | None:
+        turns = await self.list_recent_turns(session_id, limit=1)
+        return turns[-1] if turns else None

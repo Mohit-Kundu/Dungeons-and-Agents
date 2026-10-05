@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Live Turn `progress` SSE phases (`awaiting_dm`, `rolling`) with player-facing labels
+- Live Turn `progress` SSE phases (`awaiting_dm`, `rolling`, `updating_recap`) with player-facing labels
 - CLI animated wait indicator (cycling ellipsis) and dramatic Check/Save/roll reveals during `dnd play`
+- LLM Session Recap after each Turn via immutable `summary_updated` Events into `GameState.summary`
+- `GET /sessions/{id}/overview` and CLI restore view (Recap + latest Turn) on `dnd state` / before `dnd play`
 
 ### Changed
 

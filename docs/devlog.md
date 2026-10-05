@@ -4,6 +4,29 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 02 (turn-feedback-recaps): persistent Session Recaps
+
+### Done
+
+- `SummaryUpdated` Event + Reducer write into `GameState.summary`; rebuild preserves Recap
+- No-tools `RecapService` runs after every Turn; `updating_recap` progress; failures stay non-fatal
+- `GET /sessions/{id}/overview` + CLI `state` / pre-`play` show Recap and latest Turn
+- D-019; glossary Recap term
+
+### Broken / surprises
+
+- Reusing the DM FunctionModel as the Recap model in older tests is accidental but harmless; inject `RecapService` when call counts matter
+
+### Learned
+
+- Latest action belongs on the turns table; only the rolling Recap needs to be Event-sourced into the Snapshot
+
+### Next
+
+- Combat / quest Tools / richer memory when the next effort starts
+
+---
+
 ## 2026-10-04 — Ticket 01 (turn-feedback-recaps): live Turn progress
 
 ### Done

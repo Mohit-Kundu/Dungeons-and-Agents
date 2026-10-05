@@ -31,3 +31,12 @@ def test_cli_client_creates_and_reads_session(api_client: ApiClient) -> None:
     assert loaded.rng_seed == 5
     assert len(events) == 1
     assert events[0].type == "session_created"
+
+
+def test_cli_client_reads_overview(api_client: ApiClient) -> None:
+    state = api_client.create_session(scenario_id="goblin_cave", rng_seed=5)
+    overview = api_client.get_overview(state.session_id)
+
+    assert overview.state.session_id == state.session_id
+    assert overview.latest_turn is None
+    assert overview.state.summary.strip()

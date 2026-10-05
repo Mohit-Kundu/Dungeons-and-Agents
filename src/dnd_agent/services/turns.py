@@ -22,8 +22,9 @@ from pydantic_ai.usage import UsageLimits
 from dnd_agent.agent.deps import TurnDeps
 from dnd_agent.agent.dm_agent import build_dm_agent
 from dnd_agent.agent.providers import resolve_model
+from dnd_agent.agent.recap import RecapService
 from dnd_agent.config import Settings, get_settings
-from dnd_agent.domain.events import Event
+from dnd_agent.domain.events import Event, SummaryUpdated
 from dnd_agent.domain.models import GameState
 from dnd_agent.services.session_locks import SessionLockRegistry
 from dnd_agent.services.stream_events import (
@@ -134,6 +135,7 @@ class TurnService:
         settings: Settings | None = None,
         model: Model | str | None = None,
         locks: SessionLockRegistry | None = None,
+        recap: RecapService | None = None,
     ) -> None:
         self._store = store
         self._settings = settings or get_settings()
@@ -143,6 +145,7 @@ class TurnService:
             retries=self._settings.agent_retries,
         )
         self._locks = locks if locks is not None else SessionLockRegistry()
+        self._recap = recap if recap is not None else RecapService(self._model)
 
     async def stream_turn(
         self, session_id: str, player_text: str
@@ -264,6 +267,14 @@ class TurnService:
             narration=narration,
             status=status,
         )
+        async for progress in self._maybe_update_recap(
+            session_id,
+            player_text=text,
+            narration=narration,
+            events=list(deps.events_this_turn),
+            status=status,
+        ):
+            yield progress
         fresh_state = await self._store.get_snapshot(session_id)
         assert fresh_state is not None
         yield DoneEvent(
@@ -272,6 +283,40 @@ class TurnService:
             state=fresh_state,
             narration=narration,
         )
+
+    async def _maybe_update_recap(
+        self,
+        session_id: str,
+        *,
+        player_text: str,
+        narration: str,
+        events: list[Event],
+        status: str,
+    ) -> AsyncIterator[ProgressEvent]:
+        """Best-effort Recap write for successful Turns; never fails the Turn."""
+        if status != "ok":
+            return
+        prior = await self._store.get_snapshot(session_id)
+        if prior is None:
+            return
+        yield ProgressEvent(
+            phase="updating_recap",
+            label="Updating the Recap",
+        )
+        try:
+            summary = await self._recap.generate(
+                prior_summary=prior.summary,
+                player_text=player_text,
+                narration=narration,
+                events=events,
+            )
+            if summary.strip() and summary.strip() != prior.summary.strip():
+                await self._store.append_event(
+                    session_id,
+                    SummaryUpdated(summary=summary.strip(), reason="turn_recap"),
+                )
+        except Exception:  # noqa: BLE001 - Recap must not abort the Turn
+            return
 
     async def run_turn(self, session_id: str, player_text: str) -> TurnResult:
         text = player_text.strip()
@@ -314,6 +359,14 @@ class TurnService:
             narration=narration,
             status=status,
         )
+        async for _progress in self._maybe_update_recap(
+            session_id,
+            player_text=text,
+            narration=narration,
+            events=list(deps.events_this_turn),
+            status=status,
+        ):
+            pass
         fresh_state = await self._store.get_snapshot(session_id)
         assert fresh_state is not None
         return TurnResult(

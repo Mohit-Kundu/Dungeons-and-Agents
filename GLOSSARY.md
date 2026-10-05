@@ -100,9 +100,15 @@ Avoid: adventure module (unless referring to published D&D products), campaign.
 
 ## Briefing
 
-The Scenario text seeded into `GameState.summary` at Session creation (intro, known locations, suggested beats, POC notes). Shown by `dnd new` and included in Turn context.
+The Scenario text seeded into `GameState.summary` at Session creation (intro, known locations, suggested beats, POC notes). Shown by `dnd new` and included in Turn context. After play starts, the rolling Recap replaces this seed in `summary`.
 
 Avoid: prologue (prefer Briefing), system prompt dump.
+
+## Recap
+
+A concise LLM-written summary of what has happened in a Session so far. Stored in `GameState.summary` via immutable `summary_updated` Events after each Turn. Shown on Session restore (`dnd state` / before `dnd play`) together with the latest Turn.
+
+Avoid: synopsis, campaign journal (narration flavor only), memory (broader than Recap).
 
 ## Character
 

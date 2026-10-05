@@ -12,6 +12,7 @@ from dnd_agent.domain.events import (
     SessionCreated,
     ShortRestCompleted,
     SkillCheckResolved,
+    SummaryUpdated,
 )
 from dnd_agent.domain.models import (
     AbilityScores,
@@ -38,4 +39,5 @@ __all__ = [
     "SessionCreated",
     "ShortRestCompleted",
     "SkillCheckResolved",
+    "SummaryUpdated",
 ]

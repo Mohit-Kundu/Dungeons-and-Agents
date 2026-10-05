@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dnd_agent.domain.events import SessionCreated
+from dnd_agent.domain.events import SessionCreated, SummaryUpdated
 from dnd_agent.domain.models import (
     AbilityScores,
     Character,
@@ -90,3 +90,27 @@ def test_fold_events_replays_to_same_state_as_last_apply() -> None:
 
     assert folded == stepped
     assert isinstance(folded, GameState)
+
+
+def test_summary_updated_replaces_recap_and_survives_fold() -> None:
+    character = _starter_character()
+    created = SessionCreated(
+        session_id="sess_3",
+        scenario_id="goblin_cave",
+        character=character,
+        location="Cave Mouth",
+        quest=Quest(
+            id="clear_cave",
+            title="Clear the Cave",
+            summary="Drive the goblins out of the cave.",
+            status="active",
+        ),
+        rng_seed=3,
+        summary="Briefing seed.",
+    )
+    updated = SummaryUpdated(summary="Brynn found goblin tracks near the cave mouth.")
+
+    state = fold_events([created, updated])
+
+    assert state.summary == "Brynn found goblin tracks near the cave mouth."
+    assert apply_event(apply_event(None, created), updated).summary == state.summary
