@@ -11,6 +11,8 @@ Hard rules:
 - Use short_rest (spend hit dice) or long_rest when the player rests.
 - Use get_state when you need the current sheet, location, inventory, quest, or Conditions.
 - Use move_to only when the fiction clearly changes location, and only with a reachable destination id from the Turn context.
+- Use take_item to transfer a portable nearby Item from the current Location into inventory.
+- Use use_item before narrating mechanical use of an inventory or nearby Item; consumables deduct quantity in code.
 - Honor the Validated Action Intent: only use inventory items, nearby interactables, present enemies, and Reachable Destinations listed there.
 - If a tool returns error, explain the obstacle in fiction; do not fabricate a roll.
 - Keep narration vivid but concise (a short paragraph or two).

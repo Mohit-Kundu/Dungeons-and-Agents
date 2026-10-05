@@ -11,6 +11,8 @@ from dnd_agent.domain.events import (
     ConditionAdded,
     ConditionRemoved,
     DiceRolled,
+    ItemConsumed,
+    ItemTaken,
     LocationChanged,
     LongRestCompleted,
     SavingThrowResolved,
@@ -22,6 +24,7 @@ from dnd_agent.rules.conditions import normalize_condition
 from dnd_agent.rules.dice import DiceRng, roll
 from dnd_agent.rules.rests import long_rest, short_rest
 from dnd_agent.rules.saves import saving_throw
+from dnd_agent.world.inventory import plan_consume, plan_take, plan_use
 from dnd_agent.world.travel import validate_travel
 
 
@@ -270,6 +273,81 @@ async def move_to(
     try:
         await ctx.deps.store.append_event(ctx.deps.session_id, event)
     except KeyError as exc:
+        return {"error": str(exc)}
+    ctx.deps.events_this_turn.append(event)
+    return event.model_dump(mode="json")
+
+
+async def take_item(
+    ctx: RunContext[TurnDeps],
+    item_id: str,
+    reason: str = "",
+) -> dict[str, Any]:
+    """Take a portable nearby Item from the current Location into inventory."""
+    state = await ctx.deps.store.get_snapshot(ctx.deps.session_id)
+    if state is None:
+        return {"error": f"session not found: {ctx.deps.session_id}"}
+    try:
+        plan = plan_take(state, item_id)
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+    event = ItemTaken(
+        item_id=plan.item_id,
+        name=plan.name,
+        qty=plan.qty,
+        from_location_id=plan.from_location_id,
+        consumable=plan.consumable,
+        reason=reason,
+    )
+    try:
+        await ctx.deps.store.append_event(ctx.deps.session_id, event)
+    except (KeyError, ValueError) as exc:
+        return {"error": str(exc)}
+    ctx.deps.events_this_turn.append(event)
+    return event.model_dump(mode="json")
+
+
+async def use_item(
+    ctx: RunContext[TurnDeps],
+    item_id: str,
+    reason: str = "",
+) -> dict[str, Any]:
+    """Validate an available Item; consumables deduct quantity deterministically."""
+    state = await ctx.deps.store.get_snapshot(ctx.deps.session_id)
+    if state is None:
+        return {"error": f"session not found: {ctx.deps.session_id}"}
+    try:
+        plan = plan_use(state, item_id)
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+    if not plan.consumable:
+        return {
+            "ok": True,
+            "item_id": plan.item_id,
+            "name": plan.name,
+            "qty": plan.qty,
+            "source": plan.source,
+            "consumable": False,
+            "reason": reason,
+        }
+
+    try:
+        consume = plan_consume(state, item_id)
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+    event = ItemConsumed(
+        item_id=consume.item_id,
+        qty=consume.qty,
+        source=consume.source,
+        location_id=consume.location_id,
+        reason=reason,
+    )
+    try:
+        await ctx.deps.store.append_event(ctx.deps.session_id, event)
+    except (KeyError, ValueError) as exc:
         return {"error": str(exc)}
     ctx.deps.events_this_turn.append(event)
     return event.model_dump(mode="json")

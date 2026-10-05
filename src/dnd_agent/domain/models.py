@@ -34,6 +34,7 @@ class Item(BaseModel):
     id: str
     name: str
     qty: int = Field(ge=1)
+    consumable: bool = False
 
 
 class Quest(BaseModel):

@@ -299,3 +299,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Let Tools alone reject illegal targets — state-safe; illegal use can still be narrated without Tools
 - **Decision:** Every Turn proposes an Action Intent (`use` / `interact` / `resolve_enemy` / `travel` / `general`). Code validates referenced ids against inventory, current Location surroundings/enemies, and Reachable Destinations. Invalid, ambiguous, or low-confidence intents become `no_progress` Turns with no Events. Validated intents are injected into the DM prompt. Production uses an LLM proposer; tests may inject stubs or a code proposer that preserves travel detection.
 - **Consequences:** Supersedes D-023. DM context always includes validated ids. Intent extraction adds a model call in production unless a code proposer is configured.
+
+### D-025: Typed inventory Tools for take and consumable use
+
+- **Date:** 2026-10-04
+- **Status:** accepted
+- **Context:** Ticket 04 needs portable Location Items moved into inventory and consumable quantities changed only through replayable Events, without letting the DM invent loot or underflow stacks.
+- **Options considered:**
+  - Generic `add_item` / quantity patch Tools — flexible; weak validation of source Location and underflow
+  - Pure inventory planners plus typed `take_item` / `use_item` Tools emitting `ItemTaken` / `ItemConsumed` — mirrors travel; fail-closed
+  - Intent-only quantity changes without Tools — cannot narrate successful take/use while keeping mechanical honesty
+- **Decision:** Location `Item` stacks are portable; Interactables are non-portable. `take_item` transfers a nearby stack into inventory. `use_item` validates availability; Items marked `consumable` emit `ItemConsumed` and deduct quantity (removing zero stacks). Illegal take/use returns a Tool error with no Event.
+- **Consequences:** Non-consumable use is validation-only (no Event). Scenario/character content must set `consumable` when quantity should change on use.

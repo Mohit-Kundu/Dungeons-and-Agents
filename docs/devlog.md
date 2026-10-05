@@ -4,6 +4,32 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-04 — Ticket 04 (authoritative-adventure-state): use and transfer items
+
+### Done
+
+- Pure `plan_take` / `plan_use` / `plan_consume` helpers reject non-portable, remote, unavailable, and exhausted Items
+- `take_item` / `use_item` Tools emit `ItemTaken` / `ItemConsumed`; Reducer rebuilds inventory and Location stacks; zero-qty stacks are removed
+- Streaming `state_changed` covers inventory Events; post-mutation intent validation and Event-log replay stay aligned
+- Item `consumable` flag (rations start consumable); 145 tests green
+- `ItemTaken` carries `consumable` so replay does not re-derive flags from Location stacks
+
+### Broken / surprises
+
+- Streaming inventory assertions need a FunctionModel `stream_function` so tool-result callbacks emit `state_changed` (same pattern as Check streaming)
+
+### Learned
+
+- Location `Item`s are the portable seam; Interactables stay non-portable without a separate `portable` field
+
+### Next
+
+- Ticket 05: apply deterministic enemy damage
+- Ticket 06: complete objectives and quests
+- Ticket 07: refresh Recaps only on restore or command
+
+---
+
 ## 2026-10-04 — Ticket 03 (authoritative-adventure-state): reject unavailable targets
 
 ### Done

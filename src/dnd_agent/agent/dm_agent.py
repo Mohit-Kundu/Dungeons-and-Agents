@@ -17,6 +17,8 @@ from dnd_agent.agent.tools import (
     saving_throw_tool,
     short_rest_tool,
     skill_check_tool,
+    take_item,
+    use_item,
 )
 
 
@@ -36,4 +38,6 @@ def build_dm_agent(model: Model | str, *, retries: int = 2) -> Agent[TurnDeps, s
     agent.tool(name="short_rest")(short_rest_tool)
     agent.tool(name="long_rest")(long_rest_tool)
     agent.tool(move_to)
+    agent.tool(take_item)
+    agent.tool(use_item)
     return agent

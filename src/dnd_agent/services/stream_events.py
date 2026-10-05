@@ -25,6 +25,8 @@ STATE_EVENT_TYPES = frozenset(
         "short_rest_completed",
         "long_rest_completed",
         "location_changed",
+        "item_taken",
+        "item_consumed",
     }
 )
 

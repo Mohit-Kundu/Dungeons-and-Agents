@@ -151,3 +151,9 @@ Avoid: mob (ambiguous), encounter (broader than the enemies).
 A deterministic Quest requirement evaluated from Events and GameState, such as visiting a Location, carrying an item, or defeating all required Enemy Groups.
 
 Avoid: suggested beat (narrative guidance is not a completion predicate).
+
+## Consumable
+
+An Item whose mechanical use deducts quantity through an `ItemConsumed` Event. Non-consumable Items may still be targeted by Action Intent / `use_item` validation without changing quantity.
+
+Avoid: usable item (too broad; many Items can be used narratively without being Consumable).

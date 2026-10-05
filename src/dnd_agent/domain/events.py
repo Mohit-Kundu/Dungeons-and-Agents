@@ -99,6 +99,29 @@ class LocationChanged(BaseModel):
     reason: str = ""
 
 
+class ItemTaken(BaseModel):
+    """Transfer a portable Item stack from a Location into inventory."""
+
+    type: Literal["item_taken"] = "item_taken"
+    item_id: str
+    name: str
+    qty: int = Field(ge=1)
+    from_location_id: str
+    consumable: bool = False
+    reason: str = ""
+
+
+class ItemConsumed(BaseModel):
+    """Deterministic consumable quantity deduction from inventory or surroundings."""
+
+    type: Literal["item_consumed"] = "item_consumed"
+    item_id: str
+    qty: int = Field(ge=1)
+    source: Literal["inventory", "location"]
+    location_id: str | None = None
+    reason: str = ""
+
+
 class SummaryUpdated(BaseModel):
     """Immutable Recap write into GameState.summary."""
 
@@ -117,6 +140,8 @@ Event = Annotated[
     | ShortRestCompleted
     | LongRestCompleted
     | LocationChanged
+    | ItemTaken
+    | ItemConsumed
     | SummaryUpdated,
     Field(discriminator="type"),
 ]
@@ -131,5 +156,7 @@ EVENT_ADAPTER: TypeAdapter[Event] = TypeAdapter(
     | ShortRestCompleted
     | LongRestCompleted
     | LocationChanged
+    | ItemTaken
+    | ItemConsumed
     | SummaryUpdated
 )

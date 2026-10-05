@@ -19,12 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Graph-constrained `move_to` with reachable destinations on Turn results, SSE `done`, DM context, and CLI
 - Deterministic no-progress Turns for illegal explicit travel attempts
 - Fail-closed Action Intent gate before DM resolution (use/interact/resolve_enemy/travel/general)
+- Typed `take_item` / `use_item` Tools with `ItemTaken` / `ItemConsumed` Events for portable transfer and consumable quantity changes
 
 ### Changed
 
 - Goblin Cave Locations use stable ids; `GameState.location` stores the current Location id
 - `LocationChanged` also records visited Location ids on PlayableWorld
 - D-023 interim travel heuristic superseded by D-024 Action Intent validation
+- Pregen fighter rations marked `consumable`; Item model carries an optional consumable flag
 
 ### Fixed
 

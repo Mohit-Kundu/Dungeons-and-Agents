@@ -24,7 +24,7 @@
     {"id": "shield", "name": "Shield", "qty": 1},
     {"id": "chain_mail", "name": "Chain Mail", "qty": 1},
     {"id": "explorers_pack", "name": "Explorer's Pack", "qty": 1},
-    {"id": "ration", "name": "Rations (1 day)", "qty": 5}
+    {"id": "ration", "name": "Rations (1 day)", "qty": 5, "consumable": true}
   ],
   "conditions": []
 }
