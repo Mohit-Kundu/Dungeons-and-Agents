@@ -4,6 +4,29 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-05 — Ticket 01 (evals-harness): deterministic run foundation
+
+### Done
+
+- Added `RngSource` Protocol and `RngFactory`; `DiceRng` remains the default
+- Wired `TurnDeps.rng_factory` / `TurnService(rng_factory=…)` through every rolling Tool
+- Added pinable `EventStore(seed_factory=…, id_factory=…)` with secure `secrets` defaults
+- Regression: identical seed + FunctionModel outputs produce identical Event payloads across separate DBs
+
+### Broken / surprises
+
+- None — `create_session(rng_seed=…, session_id=…)` still overrides factories as before
+
+### Learned
+
+- Reproducibility for evals needs both dice injection and Session identity pinning; seed alone is not enough when comparing full Event logs
+
+### Next
+
+- Ticket 02: strict model cassettes; Ticket 04: Event-log invariant audit (both unblocked)
+
+---
+
 ## 2026-10-05 — Ticket 08 (authoritative-adventure-state): verify guarded adventure
 
 ### Done

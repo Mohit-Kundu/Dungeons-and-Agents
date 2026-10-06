@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import random
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Protocol
 
 _DICE_RE = re.compile(
     r"^(?P<count>\d+)d(?P<sides>\d+)"
@@ -40,6 +42,19 @@ class RollResult:
     kept: list[int]
     modifier: int
     total: int
+
+
+class RngSource(Protocol):
+    """Minimal dice RNG surface. Seeded implementations advance via `next_seed()`."""
+
+    seed: int
+
+    def randint(self, lo: int, hi: int) -> int: ...
+
+    def next_seed(self) -> int: ...
+
+
+RngFactory = Callable[[int], RngSource]
 
 
 class DiceRng:
@@ -97,7 +112,7 @@ def parse_dice(expression: str) -> DiceExpression:
     )
 
 
-def roll(expression: str, rng: DiceRng) -> RollResult:
+def roll(expression: str, rng: RngSource) -> RollResult:
     parsed = parse_dice(expression)
     rolls = [rng.randint(1, parsed.sides) for _ in range(parsed.count)]
     kept = list(rolls)

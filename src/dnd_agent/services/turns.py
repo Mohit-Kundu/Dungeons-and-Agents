@@ -25,6 +25,7 @@ from dnd_agent.agent.providers import resolve_model
 from dnd_agent.config import Settings, get_settings
 from dnd_agent.domain.events import Event
 from dnd_agent.domain.models import GameState
+from dnd_agent.rules.dice import DiceRng, RngFactory
 from dnd_agent.services.session_locks import SessionLockRegistry
 from dnd_agent.services.stream_events import (
     ROLL_EVENT_TYPES,
@@ -88,7 +89,9 @@ class TurnResult:
     enemies: list[EnemyStatus]
 
 
-def _turn_guidance(state: GameState) -> tuple[
+def _turn_guidance(
+    state: GameState,
+) -> tuple[
     list[ReachableDestination],
     list[IncompleteObjective],
     list[EnemyStatus],
@@ -195,6 +198,7 @@ class TurnService:
         model: Model | str | None = None,
         locks: SessionLockRegistry | None = None,
         intent: IntentProposer | None = None,
+        rng_factory: RngFactory = DiceRng,
     ) -> None:
         self._store = store
         self._settings = settings or get_settings()
@@ -205,6 +209,7 @@ class TurnService:
         )
         self._locks = locks if locks is not None else SessionLockRegistry()
         self._intent: IntentProposer = intent if intent is not None else CodeIntentService()
+        self._rng_factory = rng_factory
 
     async def stream_turn(
         self, session_id: str, player_text: str
@@ -278,7 +283,11 @@ class TurnService:
             session_id,
             limit=self._settings.memory_recent_turns,
         )
-        deps = TurnDeps(store=self._store, session_id=session_id)
+        deps = TurnDeps(
+            store=self._store,
+            session_id=session_id,
+            rng_factory=self._rng_factory,
+        )
         prompt = _format_turn_prompt(state, recent, text, intent=validated)
 
         status = "ok"
@@ -408,7 +417,11 @@ class TurnService:
             session_id,
             limit=self._settings.memory_recent_turns,
         )
-        deps = TurnDeps(store=self._store, session_id=session_id)
+        deps = TurnDeps(
+            store=self._store,
+            session_id=session_id,
+            rng_factory=self._rng_factory,
+        )
         prompt = _format_turn_prompt(state, recent, text, intent=validated)
 
         status = "ok"

@@ -2,7 +2,15 @@
 
 from dnd_agent.rules.checks import CheckResult, skill_check
 from dnd_agent.rules.conditions import KNOWN_CONDITIONS, effects_for, normalize_condition
-from dnd_agent.rules.dice import DiceRng, RollResult, d20_expression, parse_dice, roll
+from dnd_agent.rules.dice import (
+    DiceRng,
+    RngFactory,
+    RngSource,
+    RollResult,
+    d20_expression,
+    parse_dice,
+    roll,
+)
 from dnd_agent.rules.rests import LongRestResult, ShortRestResult, long_rest, short_rest
 from dnd_agent.rules.saves import SaveResult, saving_throw
 
@@ -11,6 +19,8 @@ __all__ = [
     "CheckResult",
     "DiceRng",
     "LongRestResult",
+    "RngFactory",
+    "RngSource",
     "RollResult",
     "SaveResult",
     "ShortRestResult",

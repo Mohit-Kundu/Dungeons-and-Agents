@@ -32,7 +32,7 @@ Responsibilities are split by what each part is actually good at:
 | Responsibility | Owner | Why |
 |---|---|---|
 | Narration, tone, NPC voices | **LLM** | Creative and language-heavy work is what LLMs are good at. |
-| Dice rolls | **Code** (`roll` / Check Tools) | Real randomness; results cannot be bent to fit the story. |
+| Dice rolls | **Code** (`RngSource` via Check Tools) | Real randomness; results cannot be bent to fit the story. Seeded and injectable for reproducible evals. |
 | HP, inventory, Location, Quest, Enemy Groups | **Code** (EventStore + Reducer) | A single source of truth that does not drift. |
 | Action availability | **Code** (Action Intent gate + typed Tools) | Unavailable items, exits, and enemies are rejected before narration invents them. |
 | Rule resolution (Checks, DCs, damage) | **Code** | The same inputs always produce the same outcome. |

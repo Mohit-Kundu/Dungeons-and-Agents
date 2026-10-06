@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from dnd_agent.domain.models import Character
 from dnd_agent.rules.checks import ability_modifier
 from dnd_agent.rules.conditions import effects_for
-from dnd_agent.rules.dice import DiceRng, d20_expression, roll
+from dnd_agent.rules.dice import RngSource, d20_expression, roll
 
 ABILITIES: frozenset[str] = frozenset(
     {"strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"}
@@ -32,7 +32,7 @@ def saving_throw(
     *,
     ability: str,
     dc: int,
-    rng: DiceRng,
+    rng: RngSource,
     advantage: bool = False,
     disadvantage: bool = False,
     reason: str = "",

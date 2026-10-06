@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from dnd_agent.domain.events import Event
+from dnd_agent.rules.dice import DiceRng, RngFactory
 from dnd_agent.store.event_store import EventStore
 
 
@@ -13,3 +14,4 @@ class TurnDeps:
     store: EventStore
     session_id: str
     events_this_turn: list[Event] = field(default_factory=list)
+    rng_factory: RngFactory = DiceRng

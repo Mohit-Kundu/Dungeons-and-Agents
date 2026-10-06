@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import secrets
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,13 +16,32 @@ from dnd_agent.domain.events import EVENT_ADAPTER, Event, SessionCreated
 from dnd_agent.domain.models import GameState
 from dnd_agent.store.reducer import apply_event, fold_events
 
+SeedFactory = Callable[[], int]
+IdFactory = Callable[[], str]
+
+
+def _default_seed() -> int:
+    return secrets.randbelow(2**31)
+
+
+def _default_session_id() -> str:
+    return f"sess_{secrets.token_hex(4)}"
+
 
 class EventStore:
     """Append-only Event log with cached Snapshots."""
 
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(
+        self,
+        db_path: Path | str,
+        *,
+        seed_factory: SeedFactory | None = None,
+        id_factory: IdFactory | None = None,
+    ) -> None:
         self._db_path = Path(db_path)
         self._ready = False
+        self._seed_factory: SeedFactory = seed_factory or _default_seed
+        self._id_factory: IdFactory = id_factory or _default_session_id
 
     async def open(self) -> None:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -78,8 +98,8 @@ class EventStore:
         scenario = load_scenario(scenario_id)
         resolved_character_id = character_id or scenario.character_id
         character = load_character(resolved_character_id)
-        sid = session_id or f"sess_{secrets.token_hex(4)}"
-        seed = rng_seed if rng_seed is not None else secrets.randbelow(2**31)
+        sid = session_id if session_id is not None else self._id_factory()
+        seed = rng_seed if rng_seed is not None else self._seed_factory()
 
         world = scenario.build_world(current_location_id=scenario.starting_location)
         event = SessionCreated(

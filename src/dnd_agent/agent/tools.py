@@ -22,7 +22,7 @@ from dnd_agent.domain.events import (
 )
 from dnd_agent.rules.checks import skill_check
 from dnd_agent.rules.conditions import normalize_condition
-from dnd_agent.rules.dice import DiceRng, roll
+from dnd_agent.rules.dice import roll
 from dnd_agent.rules.rests import long_rest, short_rest
 from dnd_agent.rules.saves import saving_throw
 from dnd_agent.world.enemies import plan_resolve_enemy
@@ -48,7 +48,7 @@ async def roll_dice(
     if state is None:
         return {"error": f"session not found: {ctx.deps.session_id}"}
     try:
-        rng = DiceRng(state.rng_seed)
+        rng = ctx.deps.rng_factory(state.rng_seed)
         result = roll(expression, rng)
         next_seed = rng.next_seed()
     except ValueError as exc:
@@ -81,7 +81,7 @@ async def skill_check_tool(
     if state is None:
         return {"error": f"session not found: {ctx.deps.session_id}"}
     try:
-        rng = DiceRng(state.rng_seed)
+        rng = ctx.deps.rng_factory(state.rng_seed)
         result = skill_check(
             state.character,
             skill=skill,
@@ -126,7 +126,7 @@ async def saving_throw_tool(
     if state is None:
         return {"error": f"session not found: {ctx.deps.session_id}"}
     try:
-        rng = DiceRng(state.rng_seed)
+        rng = ctx.deps.rng_factory(state.rng_seed)
         result = saving_throw(
             state.character,
             ability=ability,
@@ -211,7 +211,7 @@ async def short_rest_tool(
     if state is None:
         return {"error": f"session not found: {ctx.deps.session_id}"}
     try:
-        rng = DiceRng(state.rng_seed)
+        rng = ctx.deps.rng_factory(state.rng_seed)
         result = short_rest(
             state.character,
             hit_dice_to_spend=hit_dice_to_spend,

@@ -359,3 +359,14 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Deterministic FunctionModel playthrough plus restore/concurrency tests, and update player-facing docs to match D-022 — CI-stable acceptance for the milestone
 - **Decision:** Treat the guarded Goblin Cave FunctionModel playthrough (plus mid-play restore and shared-lock Turn/Recap concurrency) as the acceptance bar. README and architecture describe lazy Recaps and authoritative guidance; D-019 remains on record as superseded by D-022.
 - **Consequences:** Milestone docs and CI share one narrative of shipped behavior; deeper combat and multi-Scenario Quest predicates stay out of scope.
+
+### D-030: Injectable RNG and Session factories for reproducible runs
+
+- **Date:** 2026-10-05
+- **Status:** accepted
+- **Context:** Eval and measurement work needs bit-stable Event sequences given the same seed and model outputs. Tools hardcoded `DiceRng`, and `EventStore.create_session` always drew seed/id from `secrets`.
+- **Options considered:**
+  - Keep hardcoding and only pin seeds in tests via `create_session(rng_seed=…)` — partial; cannot stub dice or Session ids for cassette evals
+  - Inject `RngFactory` into TurnDeps and pinable `seed_factory` / `id_factory` on EventStore — full reproducibility seam without changing live defaults
+- **Decision:** `RngSource` Protocol + `RngFactory` (default `DiceRng`) on `TurnDeps` / `TurnService`; every rolling Tool uses `ctx.deps.rng_factory`. `EventStore` accepts optional `seed_factory` and `id_factory` (defaults remain `secrets`). Explicit `rng_seed` / `session_id` still override factories. Contract: same seed, same model outputs, same Event payloads (excluding DB timestamps).
+- **Consequences:** Later cassette and invariant tickets can pin factories without forking production paths. D-012 seed-advance Events remain the persistence mechanism.

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from dnd_agent.domain.models import AbilityScores, Character
 from dnd_agent.rules.conditions import effects_for
-from dnd_agent.rules.dice import DiceRng, d20_expression, roll
+from dnd_agent.rules.dice import RngSource, d20_expression, roll
 
 SKILL_ABILITIES: dict[str, str] = {
     "athletics": "strength",
@@ -54,7 +54,7 @@ def skill_check(
     *,
     skill: str,
     dc: int,
-    rng: DiceRng,
+    rng: RngSource,
     advantage: bool = False,
     disadvantage: bool = False,
     reason: str = "",

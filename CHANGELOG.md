@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Injectable `RngSource` / `RngFactory` on Turn dependencies so dice can be stubbed or swapped for reproducible evals
+- Pinable `EventStore` `seed_factory` / `id_factory` for deterministic Session creation in evals
 - Live Turn `progress` SSE phases (`awaiting_dm`, `rolling`) with player-facing labels
 - CLI animated wait indicator (cycling ellipsis) and dramatic Check/Save/roll reveals during `dnd play`
 - Session Recap via immutable `summary_updated` Events into `GameState.summary` (lazy refresh; see Changed)
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Rolling Tools construct RNG via `TurnDeps.rng_factory` (default `DiceRng`) instead of hardcoding `DiceRng(...)`
 - Goblin Cave Locations use stable ids; `GameState.location` stores the current Location id
 - `LocationChanged` also records visited Location ids on PlayableWorld
 - D-023 interim travel heuristic superseded by D-024 Action Intent validation

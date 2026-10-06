@@ -7,7 +7,7 @@ from math import ceil
 
 from dnd_agent.domain.models import Character
 from dnd_agent.rules.checks import ability_modifier
-from dnd_agent.rules.dice import DiceRng, roll
+from dnd_agent.rules.dice import RngSource, roll
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ def short_rest(
     character: Character,
     *,
     hit_dice_to_spend: int,
-    rng: DiceRng,
+    rng: RngSource,
     reason: str = "",
 ) -> ShortRestResult:
     if hit_dice_to_spend < 1:

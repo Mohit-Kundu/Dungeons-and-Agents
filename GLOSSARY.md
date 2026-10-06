@@ -157,3 +157,21 @@ Avoid: suggested beat (narrative guidance is not a completion predicate).
 An Item whose mechanical use deducts quantity through an `ItemConsumed` Event. Non-consumable Items may still be targeted by Action Intent / `use_item` validation without changing quantity.
 
 Avoid: usable item (too broad; many Items can be used narratively without being Consumable).
+
+## RngSource
+
+The injectable dice dependency for a Turn: something that can `randint` and yield a `next_seed` for persistence. Default implementation is `DiceRng`. Evals may substitute a fixed or recorded source.
+
+Avoid: random module (stdlib), global RNG.
+
+## Seed Factory
+
+A callable that supplies the initial `rng_seed` when creating a Session. Live play uses a secure random default; evals pin a constant.
+
+Avoid: RNG seed as the only control (Session id also needs pinning for identical Event logs).
+
+## Id Factory
+
+A callable that supplies the Session id when creating a Session. Live play uses a secure random default; evals pin a constant so Event payloads can be compared across runs.
+
+Avoid: hardcoding Session ids in production code.
