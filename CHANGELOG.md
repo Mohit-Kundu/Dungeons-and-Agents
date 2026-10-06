@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Strict model cassettes (`StrictCassetteModel`) to record/replay intent, DM, and Recap calls at the PydanticAI Model boundary without network access
 - Injectable `RngSource` / `RngFactory` on Turn dependencies so dice can be stubbed or swapped for reproducible evals
 - Pinable `EventStore` `seed_factory` / `id_factory` for deterministic Session creation in evals
 - Live Turn `progress` SSE phases (`awaiting_dm`, `rolling`) with player-facing labels

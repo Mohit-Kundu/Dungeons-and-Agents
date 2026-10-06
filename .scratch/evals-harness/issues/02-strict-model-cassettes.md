@@ -4,8 +4,8 @@
 
 **Blocked by:** 01: Deterministic run foundation.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Model calls are recordable and replayable at the PydanticAI model boundary for intent, DM, and Recap roles.
-- [ ] Replay includes streaming responses and never silently falls back to a live provider.
-- [ ] Request mismatches fail with an actionable cassette error, and round-trip record/replay tests pass.
+- [x] Model calls are recordable and replayable at the PydanticAI model boundary for intent, DM, and Recap roles.
+- [x] Replay includes streaming responses and never silently falls back to a live provider.
+- [x] Request mismatches fail with an actionable cassette error, and round-trip record/replay tests pass.

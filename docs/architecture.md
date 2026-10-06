@@ -59,6 +59,7 @@ In short: the LLM is the storyteller, and the code is the rulebook, the dice, an
 4. **DM agent**: narrates within injected guidance (incomplete Objectives, Enemy Group HP/counts, Reachable Destinations) and the validated Action Intent.
 5. **Lazy Recap**: `RecapRefreshService` folds successful Turns after `recap_through_turn` on Session restore or an explicit Recap command — not after every Turn. Shared Session locks serialize concurrent Turn and Recap work.
 6. **Interface**: FastAPI (SSE Turns) + Typer/Rich CLI.
+7. **Model cassettes (evals)**: `StrictCassetteModel` records/replays intent, DM, and Recap at the PydanticAI Model boundary so CI can run without a live provider (D-031).
 
 ### Turn Flow
 

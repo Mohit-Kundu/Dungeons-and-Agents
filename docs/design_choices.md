@@ -370,3 +370,15 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Inject `RngFactory` into TurnDeps and pinable `seed_factory` / `id_factory` on EventStore — full reproducibility seam without changing live defaults
 - **Decision:** `RngSource` Protocol + `RngFactory` (default `DiceRng`) on `TurnDeps` / `TurnService`; every rolling Tool uses `ctx.deps.rng_factory`. `EventStore` accepts optional `seed_factory` and `id_factory` (defaults remain `secrets`). Explicit `rng_seed` / `session_id` still override factories. Contract: same seed, same model outputs, same Event payloads (excluding DB timestamps).
 - **Consequences:** Later cassette and invariant tickets can pin factories without forking production paths. D-012 seed-advance Events remain the persistence mechanism.
+
+### D-031: Strict model cassettes at the PydanticAI Model boundary
+
+- **Date:** 2026-10-05
+- **Status:** accepted
+- **Context:** Eval CI must run intent, DM, and Recap model interactions without network or API spend, while live runs can record fixtures. FunctionModel stubs are hand-authored; they do not capture real provider transcripts.
+- **Options considered:**
+  - Keep FunctionModel-only doubles — CI-stable but cannot golden-replay recorded provider behavior
+  - HTTP-level VCR — misses PydanticAI message/tool framing and streaming `request_stream`
+  - Wrap `pydantic_ai.models.Model` with strict record/replay per ModelRole — one seam for Agent.run and SSE streaming
+- **Decision:** `StrictCassetteModel` wraps an inner Model; modes are `record`, `replay`, and `live`. Replay matches request fingerprints and never calls a live provider (mismatch/exhaustion raise `CassetteError`). Separate Cassette files per ModelRole (`intent` / `dm` / `recap`). Streaming replay synthesizes stream events from the recorded `ModelResponse`.
+- **Consequences:** Eval runner (ticket 07) can inject cassette models via existing `TurnService` / `IntentService` / `RecapService` seams. Golden suites store fixtures beside cases.

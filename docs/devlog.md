@@ -4,6 +4,29 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-05 — Ticket 02 (evals-harness): strict model cassettes
+
+### Done
+
+- Added `StrictCassetteModel` / `CassetteStore` wrapping the PydanticAI `Model` boundary (`request` + `request_stream`)
+- Record and replay modes with per-ModelRole Cassette files (`intent`, `dm`, `recap`); replay never calls a live provider
+- Actionable `CassetteError` on request mismatch or exhausted Cassette; round-trip tests including streaming and agent roles
+- Glossary (Cassette, ModelRole), D-031, CHANGELOG
+
+### Broken / surprises
+
+- Replay replaces the wrapped model with a guard so identity comes from Cassette metadata, not the discarded live Model
+
+### Learned
+
+- Fingerprints must strip volatile message timestamps or every replay mismatches; streaming can synthesize deltas from the recorded `ModelResponse`
+
+### Next
+
+- Ticket 03: turn telemetry and cost metrics; Ticket 04: Event-log invariant audit; Ticket 07: eval runner uses these Cassettes
+
+---
+
 ## 2026-10-05 — Ticket 01 (evals-harness): deterministic run foundation
 
 ### Done

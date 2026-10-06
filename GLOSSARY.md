@@ -175,3 +175,15 @@ Avoid: RNG seed as the only control (Session id also needs pinning for identical
 A callable that supplies the Session id when creating a Session. Live play uses a secure random default; evals pin a constant so Event payloads can be compared across runs.
 
 Avoid: hardcoding Session ids in production code.
+
+## Cassette
+
+A checked-in fixture of recorded Model requests and responses for one ModelRole (`intent`, `dm`, or `recap`). Replay serves responses without calling a live provider; mismatched requests raise a Cassette error.
+
+Avoid: mock, VCR tape (prefer Cassette), stub (FunctionModel doubles are stubs, not Cassettes).
+
+## ModelRole
+
+Which agent boundary a Cassette covers: `intent`, `dm`, or `recap`. Each role uses its own Cassette file because call shapes and timing differ.
+
+Avoid: agent type (ambiguous with DM Agent), provider.
