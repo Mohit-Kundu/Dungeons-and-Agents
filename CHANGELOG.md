@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Per-Turn telemetry (`turn_metrics` table) capturing model role/name, latency, tokens, tool validity, and estimated USD cost via `genai-prices`
+- `MeteredModel` / `TurnMeter` at the PydanticAI Model boundary and `aggregate_turn_metrics` for eval Session summaries
 - Strict model cassettes (`StrictCassetteModel`) to record/replay intent, DM, and Recap calls at the PydanticAI Model boundary without network access
 - Injectable `RngSource` / `RngFactory` on Turn dependencies so dice can be stubbed or swapped for reproducible evals
 - Pinable `EventStore` `seed_factory` / `id_factory` for deterministic Session creation in evals

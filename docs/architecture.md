@@ -60,6 +60,7 @@ In short: the LLM is the storyteller, and the code is the rulebook, the dice, an
 5. **Lazy Recap**: `RecapRefreshService` folds successful Turns after `recap_through_turn` on Session restore or an explicit Recap command — not after every Turn. Shared Session locks serialize concurrent Turn and Recap work.
 6. **Interface**: FastAPI (SSE Turns) + Typer/Rich CLI.
 7. **Model cassettes (evals)**: `StrictCassetteModel` records/replays intent, DM, and Recap at the PydanticAI Model boundary so CI can run without a live provider (D-031).
+8. **Turn Telemetry**: `MeteredModel` records per-request usage into a TurnMeter; `EventStore` persists `turn_metrics` separately from Events (D-032). Cost uses `genai-prices` with explicit unknown pricing (D-034).
 
 ### Turn Flow
 
@@ -69,11 +70,11 @@ Player input
 Load Snapshot + recent Turns + Recap
    ↓
 Propose Action Intent → validate Playable Facts
-   ↓ (reject → no_progress Turn, stop)
+   ↓ (reject → no_progress Turn + metrics, stop)
 DM agent narrates → calls typed Tools as needed
    (Checks / travel / inventory / enemy damage)  ← loop until done
    ↓
-Append Turn; evaluate Objective/Quest predicates → Events
+Append Turn + turn_metrics; evaluate Objective/Quest predicates → Events
    ↓
 Return narration + guidance (objectives, enemies, destinations)
 ```

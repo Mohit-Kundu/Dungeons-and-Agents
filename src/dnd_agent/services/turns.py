@@ -10,6 +10,7 @@ from typing import Any
 from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
+    ModelMessage,
     PartDeltaEvent,
     PartStartEvent,
     TextPart,
@@ -40,6 +41,13 @@ from dnd_agent.services.stream_events import (
     TurnStreamEvent,
 )
 from dnd_agent.store.event_store import EventStore
+from dnd_agent.telemetry.aggregate import TurnStatus
+from dnd_agent.telemetry.meter import (
+    begin_turn_meter,
+    build_turn_telemetry,
+    meter_model,
+    tool_validity_from_messages,
+)
 from dnd_agent.world.enemies import EnemyStatus, enemy_statuses, format_enemy_status_lines
 from dnd_agent.world.intent import (
     CodeIntentService,
@@ -202,7 +210,10 @@ class TurnService:
     ) -> None:
         self._store = store
         self._settings = settings or get_settings()
-        self._model = model if model is not None else resolve_model(self._settings)
+        raw_model = model if model is not None else resolve_model(self._settings)
+        self._model: Model | str = (
+            meter_model(raw_model, role="dm") if isinstance(raw_model, Model) else raw_model
+        )
         self._agent = build_dm_agent(
             self._model,
             retries=self._settings.agent_retries,
@@ -210,6 +221,26 @@ class TurnService:
         self._locks = locks if locks is not None else SessionLockRegistry()
         self._intent: IntentProposer = intent if intent is not None else CodeIntentService()
         self._rng_factory = rng_factory
+
+    async def _persist_turn_metrics(
+        self,
+        session_id: str,
+        turn_number: int,
+        status: TurnStatus,
+        *,
+        messages: list[ModelMessage] | None = None,
+    ) -> None:
+        tool_calls, tool_errors = (
+            tool_validity_from_messages(messages) if messages is not None else (0, 0)
+        )
+        telemetry = build_turn_telemetry(
+            session_id,
+            turn_number,
+            status,
+            tool_calls=tool_calls,
+            tool_errors=tool_errors,
+        )
+        await self._store.add_turn_metrics(session_id, turn_number, telemetry)
 
     async def stream_turn(
         self, session_id: str, player_text: str
@@ -241,6 +272,7 @@ class TurnService:
             narration=narration,
             status="no_progress",
         )
+        await self._persist_turn_metrics(session_id, turn_number, "no_progress")
         progress_events = await self._apply_progress(session_id)
         fresh = await self._store.get_snapshot(session_id)
         assert fresh is not None
@@ -265,6 +297,7 @@ class TurnService:
         if state is None:
             raise KeyError(f"session not found: {session_id}")
 
+        begin_turn_meter()
         validated, rejected = await self._resolve_intent(session_id, text, state)
         if rejected is not None:
             yield DoneEvent(
@@ -290,10 +323,11 @@ class TurnService:
         )
         prompt = _format_turn_prompt(state, recent, text, intent=validated)
 
-        status = "ok"
+        status: TurnStatus = "ok"
         narration_parts: list[str] = []
         emitted_domain = 0
         await_tick = 0
+        run_messages: list[ModelMessage] | None = None
 
         yield ProgressEvent(
             phase="awaiting_dm",
@@ -353,6 +387,7 @@ class TurnService:
                             narration_parts.append(agent_event.delta.content_delta)
                             yield NarrationDelta(text=agent_event.delta.content_delta)
                     elif isinstance(agent_event, AgentRunResultEvent):
+                        run_messages = agent_event.result.all_messages()
                         output = str(agent_event.result.output).strip()
                         if output and not narration_parts:
                             narration_parts.append(output)
@@ -375,6 +410,12 @@ class TurnService:
             player_text=text,
             narration=narration,
             status=status,
+        )
+        await self._persist_turn_metrics(
+            session_id,
+            turn_number,
+            status,
+            messages=run_messages,
         )
         progress_events = await self._apply_progress(session_id)
         for domain_event in progress_events:
@@ -408,6 +449,7 @@ class TurnService:
         if state is None:
             raise KeyError(f"session not found: {session_id}")
 
+        begin_turn_meter()
         validated, rejected = await self._resolve_intent(session_id, text, state)
         if rejected is not None:
             return rejected
@@ -424,7 +466,8 @@ class TurnService:
         )
         prompt = _format_turn_prompt(state, recent, text, intent=validated)
 
-        status = "ok"
+        status: TurnStatus = "ok"
+        run_messages: list[ModelMessage] | None = None
         try:
             result = await self._agent.run(
                 prompt,
@@ -434,6 +477,7 @@ class TurnService:
                     tool_calls_limit=self._settings.max_tool_calls_per_turn,
                 ),
             )
+            run_messages = result.all_messages()
             narration = result.output.strip() or "The world holds its breath."
         except Exception as exc:  # noqa: BLE001 - persist aborted Turn
             status = "aborted"
@@ -444,6 +488,12 @@ class TurnService:
             player_text=text,
             narration=narration,
             status=status,
+        )
+        await self._persist_turn_metrics(
+            session_id,
+            turn_number,
+            status,
+            messages=run_messages,
         )
         progress_events = await self._apply_progress(session_id)
         deps.events_this_turn.extend(progress_events)

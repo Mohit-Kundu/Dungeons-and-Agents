@@ -487,6 +487,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
     { name = "fastapi" },
+    { name = "genai-prices" },
     { name = "httpx" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
@@ -509,6 +510,7 @@ dev = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
     { name = "fastapi", specifier = ">=0.142.2" },
+    { name = "genai-prices", specifier = ">=0.1.9" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pydantic", specifier = ">=2.13.5" },
     { name = "pydantic-ai", specifier = ">=0.2.0" },

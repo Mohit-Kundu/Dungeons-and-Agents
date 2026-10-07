@@ -4,8 +4,8 @@
 
 **Blocked by:** 02: Strict model cassettes.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Telemetry captures model role, model name, request latency, input/output tokens, tool calls, tool errors, and estimated USD cost.
-- [ ] Per-Turn telemetry is stored separately from domain Events and survives normal Session persistence.
-- [ ] Unknown model pricing is represented explicitly rather than guessed, and unit tests cover metric aggregation.
+- [x] Telemetry captures model role, model name, request latency, input/output tokens, tool calls, tool errors, and estimated USD cost.
+- [x] Per-Turn telemetry is stored separately from domain Events and survives normal Session persistence.
+- [x] Unknown model pricing is represented explicitly rather than guessed, and unit tests cover metric aggregation.

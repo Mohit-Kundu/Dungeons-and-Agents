@@ -187,3 +187,15 @@ Avoid: mock, VCR tape (prefer Cassette), stub (FunctionModel doubles are stubs, 
 Which agent boundary a Cassette covers: `intent`, `dm`, or `recap`. Each role uses its own Cassette file because call shapes and timing differ.
 
 Avoid: agent type (ambiguous with DM Agent), provider.
+
+## Turn Telemetry
+
+Per-Turn measurement of model usage (role, model name, tokens, latency), tool-call validity, and estimated USD cost. Stored in the `turn_metrics` table keyed by Session and turn number — not as domain Events.
+
+Avoid: Event (domain), trace (prefer Langfuse/OTel for distributed traces).
+
+## Session Metrics
+
+Aggregated Turn Telemetry for one Session or eval case: token totals, tool validity rate, latency percentiles, cost sum, and unknown-pricing counts.
+
+Avoid: report (the Eval Run Report is the file-level artifact that includes Session Metrics).

@@ -15,6 +15,7 @@ from dnd_agent.content.loader import load_character, load_scenario
 from dnd_agent.domain.events import EVENT_ADAPTER, Event, SessionCreated
 from dnd_agent.domain.models import GameState
 from dnd_agent.store.reducer import apply_event, fold_events
+from dnd_agent.telemetry.aggregate import TurnTelemetry
 
 SeedFactory = Callable[[], int]
 IdFactory = Callable[[], str]
@@ -76,6 +77,21 @@ class EventStore:
                     created_at TEXT NOT NULL,
                     FOREIGN KEY (session_id) REFERENCES sessions(id),
                     UNIQUE(session_id, turn_number)
+                );
+                CREATE TABLE IF NOT EXISTS turn_metrics (
+                    session_id TEXT NOT NULL,
+                    turn_number INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    latency_ms REAL NOT NULL,
+                    input_tokens INTEGER NOT NULL,
+                    output_tokens INTEGER NOT NULL,
+                    tool_calls INTEGER NOT NULL,
+                    tool_errors INTEGER NOT NULL,
+                    cost_usd REAL,
+                    unknown_pricing_count INTEGER NOT NULL,
+                    models_json TEXT NOT NULL,
+                    PRIMARY KEY (session_id, turn_number),
+                    FOREIGN KEY (session_id) REFERENCES sessions(id)
                 );
                 """
             )
@@ -321,3 +337,98 @@ class EventStore:
     async def get_latest_turn(self, session_id: str) -> dict[str, Any] | None:
         turns = await self.list_recent_turns(session_id, limit=1)
         return turns[-1] if turns else None
+
+    async def add_turn_metrics(
+        self,
+        session_id: str,
+        turn_number: int,
+        telemetry: TurnTelemetry,
+    ) -> None:
+        await self._ensure_open()
+        if telemetry.session_id != session_id or telemetry.turn_number != turn_number:
+            raise ValueError("telemetry session_id/turn_number must match arguments")
+        async with aiosqlite.connect(self._db_path) as db:
+            await db.execute(
+                """
+                INSERT INTO turn_metrics (
+                    session_id, turn_number, status, latency_ms,
+                    input_tokens, output_tokens, tool_calls, tool_errors,
+                    cost_usd, unknown_pricing_count, models_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(session_id, turn_number) DO UPDATE SET
+                    status = excluded.status,
+                    latency_ms = excluded.latency_ms,
+                    input_tokens = excluded.input_tokens,
+                    output_tokens = excluded.output_tokens,
+                    tool_calls = excluded.tool_calls,
+                    tool_errors = excluded.tool_errors,
+                    cost_usd = excluded.cost_usd,
+                    unknown_pricing_count = excluded.unknown_pricing_count,
+                    models_json = excluded.models_json
+                """,
+                (
+                    session_id,
+                    turn_number,
+                    telemetry.status,
+                    telemetry.latency_ms,
+                    telemetry.input_tokens,
+                    telemetry.output_tokens,
+                    telemetry.tool_calls,
+                    telemetry.tool_errors,
+                    telemetry.cost_usd,
+                    telemetry.unknown_pricing_count,
+                    telemetry.model_dump_json(include={"model_requests"}),
+                ),
+            )
+            await db.commit()
+
+    async def list_turn_metrics(self, session_id: str) -> list[TurnTelemetry]:
+        await self._ensure_open()
+        async with aiosqlite.connect(self._db_path) as db:
+            cursor = await db.execute(
+                """
+                SELECT turn_number, status, latency_ms, input_tokens, output_tokens,
+                       tool_calls, tool_errors, cost_usd, unknown_pricing_count, models_json
+                FROM turn_metrics
+                WHERE session_id = ?
+                ORDER BY turn_number ASC
+                """,
+                (session_id,),
+            )
+            rows = await cursor.fetchall()
+
+        result: list[TurnTelemetry] = []
+        for (
+            turn_number,
+            status,
+            latency_ms,
+            input_tokens,
+            output_tokens,
+            tool_calls,
+            tool_errors,
+            cost_usd,
+            unknown_pricing_count,
+            models_json,
+        ) in rows:
+            payload = json.loads(models_json)
+            model_requests = (
+                payload.get("model_requests", payload)
+                if isinstance(payload, dict)
+                else payload
+            )
+            result.append(
+                TurnTelemetry(
+                    session_id=session_id,
+                    turn_number=int(turn_number),
+                    status=status,  # type: ignore[arg-type]
+                    latency_ms=float(latency_ms),
+                    input_tokens=int(input_tokens),
+                    output_tokens=int(output_tokens),
+                    tool_calls=int(tool_calls),
+                    tool_errors=int(tool_errors),
+                    cost_usd=cost_usd,
+                    unknown_pricing_count=int(unknown_pricing_count),
+                    model_requests=model_requests,
+                )
+            )
+        return result

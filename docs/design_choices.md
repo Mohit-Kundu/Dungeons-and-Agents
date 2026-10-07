@@ -382,3 +382,27 @@ Growing, append-only log of design decisions. Entries are numbered `D-NNN`. Neve
   - Wrap `pydantic_ai.models.Model` with strict record/replay per ModelRole — one seam for Agent.run and SSE streaming
 - **Decision:** `StrictCassetteModel` wraps an inner Model; modes are `record`, `replay`, and `live`. Replay matches request fingerprints and never calls a live provider (mismatch/exhaustion raise `CassetteError`). Separate Cassette files per ModelRole (`intent` / `dm` / `recap`). Streaming replay synthesizes stream events from the recorded `ModelResponse`.
 - **Consequences:** Eval runner (ticket 07) can inject cassette models via existing `TurnService` / `IntentService` / `RecapService` seams. Golden suites store fixtures beside cases.
+
+### D-032: Turn telemetry lives in turn_metrics, not Events
+
+- **Date:** 2026-10-06
+- **Status:** accepted
+- **Context:** Eval runs need per-Turn model usage, latency, tool validity, and cost without polluting the authoritative Event log or the reducer.
+- **Options considered:**
+  - Emit domain Events for metrics — couples observability to Playable Facts and bloats replay
+  - In-memory only for evals — lost on Session restore and unavailable for production Sessions
+  - Side table keyed by `(session_id, turn_number)` — queryable, survives persistence, leaves Events pure
+- **Decision:** Store Turn Telemetry in SQLite `turn_metrics` via `EventStore.add_turn_metrics` / `list_turn_metrics`. `MeteredModel` records usage into a contextvar `TurnMeter`; `TurnService` persists after every completed Turn (`ok`, `no_progress`, `aborted`).
+- **Consequences:** Eval reports (ticket 07) aggregate with `aggregate_turn_metrics`. Langfuse (ticket 08) can later mirror the same fields without changing Events.
+
+### D-034: Estimated cost via genai-prices; unknown pricing is explicit
+
+- **Date:** 2026-10-06
+- **Status:** accepted
+- **Context:** Session cost needs USD estimates without maintaining a hand-edited price table. Guessing prices for unknown models would silently mislead eval gates.
+- **Options considered:**
+  - Static in-repo price table — simple but drifts from providers
+  - Tokens only — insufficient for cost budgets in reports
+  - `genai-prices` via `ModelResponse.cost()` — shared with PydanticAI; fails loudly on unknown models
+- **Decision:** Estimate cost with `genai-prices`. When lookup fails or model name is missing, store `cost_usd=None` and increment `unknown_pricing_count` rather than inventing a price. Declare `genai-prices` as a direct dependency.
+- **Consequences:** Aggregates sum known costs and surface unknown pricing counts so reports stay honest.

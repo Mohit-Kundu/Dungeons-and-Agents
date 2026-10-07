@@ -279,9 +279,13 @@ class IntentService:
 
     def __init__(self, model: object, *, retries: int = 1) -> None:
         from pydantic_ai import Agent
+        from pydantic_ai.models import Model
 
+        from dnd_agent.telemetry.meter import meter_model
+
+        metered = meter_model(model, role="intent") if isinstance(model, Model) else model
         self._agent: Agent[None, ProposedActionIntent] = Agent(
-            model,  # type: ignore[arg-type]
+            metered,  # type: ignore[arg-type]
             output_type=ProposedActionIntent,
             system_prompt=INTENT_SYSTEM_PROMPT,
             retries=retries,

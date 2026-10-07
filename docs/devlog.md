@@ -4,6 +4,30 @@ Dated journal. Newest entry first.
 
 ---
 
+## 2026-10-06 — Ticket 03 (evals-harness): turn telemetry and cost metrics
+
+### Done
+
+- Added `MeteredModel` / `TurnMeter` wrapping the PydanticAI Model boundary for intent, DM, and Recap roles
+- Persisted per-Turn telemetry in SQLite `turn_metrics` (separate from domain Events); survives Session reopen
+- Cost via `genai-prices` (`ModelResponse.cost()`); unknown pricing stored as `None` with `unknown_pricing_count`
+- Pure `aggregate_turn_metrics` and `tool_validity_from_messages` for eval summaries
+- Glossary (Turn Telemetry, Session Metrics), D-032 / D-034, CHANGELOG
+
+### Broken / surprises
+
+- FunctionModel overwrites `ModelResponse.model_name`; tests assert non-empty name rather than the stub label
+
+### Learned
+
+- Telemetry belongs beside the `turns` table, not in the Event log — keeps the reducer pure and evals queryable
+
+### Next
+
+- Ticket 04: Event-log invariant audit; Ticket 07: eval runner aggregates these metrics into reports
+
+---
+
 ## 2026-10-05 — Ticket 02 (evals-harness): strict model cassettes
 
 ### Done

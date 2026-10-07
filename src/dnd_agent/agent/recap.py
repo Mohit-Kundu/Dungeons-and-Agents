@@ -60,7 +60,10 @@ class RecapService:
         *,
         retries: int = 1,
     ) -> None:
-        self._agent = build_recap_agent(model, retries=retries)
+        from dnd_agent.telemetry.meter import meter_model
+
+        wrapped: Model | str = meter_model(model, role="recap") if isinstance(model, Model) else model
+        self._agent = build_recap_agent(wrapped, retries=retries)
 
     async def generate(
         self,
